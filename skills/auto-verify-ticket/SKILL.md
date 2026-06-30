@@ -38,8 +38,8 @@ the arbiter** (steps 1, 4–6 and Guards).
    - **GitHub issue** → `gh issue view <n> --json title,body,labels` (accepts a number or URL).
    - **Pasted text** → use it directly.
    - **Supplementary files** (if any) → read each path directly.
-   If the fetch tool you need (Rovo / `gh`) isn't available, say so in one line and either take the
-   text pasted instead or stop — don't work around it.
+   If the fetch tool you need (Rovo / `gh`) isn't available, comment on the ticket that the required
+   fetch tool is unavailable and stop — fail closed; never work around it or pause for input.
 
 3. **Extract every concrete reference** the ticket — and any supplementary files — make: file names,
    component names, function names, routes, env vars, and domain terminology.
@@ -106,7 +106,7 @@ the arbiter** (steps 1, 4–6 and Guards).
    referencing the file. **Don't turn a Flag into a question and stop** — open forks travel forward to
    the **PLAN gate** (carried in `auto-plan-brief`'s Open Questions); run standalone, with no PLAN gate,
    they wait in `TICKET_CONTEXT.md` for you. The one exception is a **confabulation** (step 5): don't
-   hand off — surface the evidence doc and let the human override-and-proceed or kill it (Guards).
+   hand off — comment the evidence on the ticket and open no PR — fail closed; never proceed on a false premise (no human is in the loop to override) (Guards).
 
 ## Guards
 - **Don't invent.** If a reference is ambiguous, record it under Flags as an **open fork to raise at
@@ -114,7 +114,7 @@ the arbiter** (steps 1, 4–6 and Guards).
   "open" as "ask the user now."
 - **Don't stop the flow — one exception.** Every mismatch is a **Flag** and the flow continues;
   decisive forks are raised at the PLAN gate, not here. **Stop only on a confabulation** (step 5) — and
-  even then **write the evidence, present it, let the human override or kill**, never abort silently.
+  even then **write the evidence, comment it on the ticket, and open no PR**, never abort silently.
   Fail-closed: holds on the auto path too.
 - **Supplementary context is evidence, not truth.** Files handed alongside the ticket are reconciled
   like it, not trusted over it: the **code is the arbiter**, a note closes a fork only when its claim

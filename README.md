@@ -40,15 +40,17 @@ the daily driver.
   → auto-plan-brief → /plan (internal, NO gate)
        → resolve every fork to the simplest ticket-grounded option;
          log each DECISIVE fork + the alternative rejected → DECISIONS.md
-  → author acceptance tests (separate step, after the plan, independent of the build)
-  → branch off default → build per plan (must SATISFY the acceptance tests, not edit them)
-  ┌─ build↔verify loop (budget: 3 build attempts) ──────────────────────────────┐
-  │   independent verifier (fresh context) → falsify vs criteria + review test   │
-  │   diff (weakened-old AND vacuous-new) → verdict                              │
-  │     verified → PR ready · falsified → retry · couldn't-verify/exhausted → DRAFT │
+  → branch off default → persist PLAN.md
+  → /auto-author-acceptance-tests → COMMITS the tests (= the build's base) → capture base
+  → build per plan (/auto-implement-brief; must SATISFY the acceptance tests, never edit them)
+  ┌─ build↔verify loop (orchestrator owns budget: 3 build attempts) ─────────────┐
+  │   /auto-verify-build — FRESH subagent per pass → falsify vs criteria + review │
+  │   test diff (weakened-old · vacuous-new · edited-acceptance) → VERIFICATION.md │
+  │     verified → done · falsified → fix task (retry) · couldn't-verify/exhausted → DRAFT │
   └──────────────────────────────────────────────────────────────────────────────┘
   → /code-review (effort ∝ diff)
-  → /auto-pr  — body LEADS with ⚠️ decisions-to-confirm (ranked) + verdict + test-integrity report
+  → /auto-pr  — reads DECISIONS.md + VERIFICATION.md; leads with ⚠️ decisions + verdict;
+                opens READY only if verified, else DRAFT
   → STOP. Never merges. Merge = the (async) human gate.
 ```
 
@@ -56,12 +58,14 @@ the daily driver.
 
 | Skill | Role |
 |---|---|
-| `auto-dev-flow` | The unattended orchestrator — ticket → PR with no human in the loop |
-| `auto-verify-ticket` | reconcile an externally-authored ticket against the code (confabulation → refuse) |
-| `auto-plan-brief` | feature recon — gather grounded context for `/plan` mode |
-| `auto-implement-brief` | build the plan the lean way — reuse survey first, then minimal build |
+| `auto-dev-flow` | The unattended orchestrator — ticket → PR with no human in the loop; owns the build↔verify loop + budget |
+| `auto-verify-ticket` | reconcile an externally-authored ticket against the code (confabulation → comment on ticket, no PR) |
+| `auto-plan-brief` | feature recon — gather grounded context for `/plan` mode (never pauses; assumptions → Open Questions) |
+| `auto-author-acceptance-tests` | **(new)** author acceptance tests from the criteria, independent of the build, and **commit them** as the base |
+| `auto-implement-brief` | build the plan the lean way — reuse survey → minimal build; decide-and-flag, never edits the acceptance tests |
+| `auto-verify-build` | **(new)** the independent verifier — fresh subagent per pass, falsifies vs criteria + reviews the test diff → verdict |
 | `auto-commit` | commit with a proportional Decision Log |
-| `auto-pr` | open the PR whose body synthesises the branch's Decision Logs |
+| `auto-pr` | assemble the gate PR body (⚠️ decisions + verdict + test-integrity) and open ready/draft per the verdict — never merges |
 
 `/code-review` is a Claude Code built-in, used by the flow but not bundled here.
 
@@ -84,7 +88,9 @@ auto-flow-skills/
     SPEC.md                         # the design rationale + decisions ruled out
   skills/auto-verify-ticket/SKILL.md
   skills/auto-plan-brief/SKILL.md
+  skills/auto-author-acceptance-tests/SKILL.md
   skills/auto-implement-brief/SKILL.md
+  skills/auto-verify-build/SKILL.md
   skills/auto-commit/SKILL.md
   skills/auto-pr/SKILL.md
 ```
@@ -103,7 +109,7 @@ Then `/auto-dev-flow <ticket>`. No other plugin is required — the chain is bun
 Symlink the skill folders into your user skills dir so edits in this repo are live immediately:
 
 ```sh
-for d in auto-dev-flow auto-verify-ticket auto-plan-brief auto-implement-brief auto-commit auto-pr; do
+for d in auto-dev-flow auto-verify-ticket auto-plan-brief auto-author-acceptance-tests auto-implement-brief auto-verify-build auto-commit auto-pr; do
   ln -s "$PWD/skills/$d" ~/.claude/skills/"$d"
 done
 ```

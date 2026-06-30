@@ -15,7 +15,7 @@ sure the *why* travels with it, in the Decision Log format (see global CLAUDE.md
 
 2. **Group into logical commits.** One logical change per commit. If the changes span unrelated
    concerns (e.g. a bug fix *and* an unrelated copy tweak), **split them** — commit each group
-   separately rather than lumping them. Tell the user the grouping before committing. Leave stray
+   separately rather than lumping them. Record the grouping (it shows in the commit subjects); don't pause — this runs unattended. Leave stray
    files that don't belong (build artifacts, files from another branch) untracked — don't `git add -A`.
 
 3. **Write the Decision Log — source the *why* from context, not the diff.** The diff gives you
@@ -45,5 +45,5 @@ sure the *why* travels with it, in the Decision Log format (see global CLAUDE.md
 
 ## Guards
 - **Don't invent intent.** If you genuinely don't know *why* a change was made (e.g. pre-existing
-  edits you didn't author), ask — a fabricated rationale is worse for a reviewer than none.
+  edits you didn't author), state that plainly in the commit body rather than fabricating one — and never pause for input (this runs unattended).
 - Don't dress up trivial changes to look important. Proportionality is the point.

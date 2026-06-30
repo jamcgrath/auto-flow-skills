@@ -19,7 +19,7 @@ Second step of the feature path **when there's a ticket** (`auto-verify-ticket` 
 1. **Get the starting context.** Read `.dev-flow/<task>/TICKET_CONTEXT.md` if it exists (from
    `/auto-verify-ticket`). If it doesn't, that's fine — **no ticket is a normal entry, not a fallback**:
    work from whatever the user gives (a typed task description, a GitHub issue, an AI brief). If
-   even that is thin, ask one question to pin the goal before reconnoitring.
+   even that is thin, proceed on the best ticket-grounded interpretation and record the assumption under Open Questions — never block for input (this runs unattended).
 
 2. **Reconnoitre the codebase** — hand the searching to an `Explore` subagent. **If you have
    `TICKET_CONTEXT.md`, build on it — don't restate its Codebase Notes; without it, gather the

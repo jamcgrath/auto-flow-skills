@@ -74,8 +74,11 @@ yes/no decision.** A wrong PR is cheap; a human *fooled into merging* a wrong PR
 
 ## The build↔verify loop (the engine)
 
-The conversation never pinned this and it's the most important mechanic. The builder and the
-independent verifier form a loop:
+It's the most important mechanic, and it's **split across a skill boundary**: `/auto-verify-build` is a
+*single* fresh-subagent pass (it returns a verdict, nothing more), and `/auto-dev-flow` **owns the loop
+and the budget**, re-spawning a NEW verifier each iteration. The split is the point — a verifier that
+persisted across retries would accumulate the builder's context and become the very self-grading it
+exists to replace. The builder and the (re-spawned) verifier form a loop:
 
 - Verifier returns a **structured verdict**: `verified` / `couldn't-verify` / `falsified`.
 - `falsified` → hand the verdict back to the builder to fix → re-verify. **Budget: 2 retries (3
@@ -92,10 +95,14 @@ independent verifier form a loop:
   test-ids), but **independent of the implementation**. Keyed on **user-visible behaviour + stable
   `data-testid`s the builder must honour** — not on internal selectors the builder happens to choose
   (or the test fails for the wrong reason). The builder must **satisfy** them, not edit them.
-- **"Write-protection" is detection, not prevention — stated honestly.** Same filesystem, same user:
-  the skill cannot *prevent* the builder editing a test file. "Protection" = the tamper tripwire — any
-  builder edit to an acceptance test is a **flagged breach**, surfaced in the PR. The skill promises
-  detection + visibility, not enforcement it can't deliver.
+- **"Write-protection" is detection, not prevention — and the mechanism is commit-first.** Same
+  filesystem, same user: nothing can *prevent* the builder editing a test file. The subtlety: the
+  acceptance tests are authored *this run*, after base — so without intervention a `git diff <base>`
+  sees them as new files and a weakening edit is **invisible** (the tamper check can't see the case it
+  most needs to). The fix: `/auto-author-acceptance-tests` **commits the tests before the build**, so
+  they sit *in* the build's base and any later builder edit surfaces in `git diff <base>` trivially —
+  detection becomes a one-liner instead of an unimplementable promise. Such an edit is a **flagged
+  breach** in the PR. Detection + visibility, not enforcement it can't deliver.
 - **Tamper tripwires cover both directions.** Weakened *old* tests (assertion count down, `.skip` /
   `.only` / `xit` / `todo` added, a test file deleted, coverage dropped on touched lines) **and**
   vacuous *new* tests (tautologies like `expect(true)` that push the count *up*). The adversarial

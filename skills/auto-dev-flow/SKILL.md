@@ -28,18 +28,20 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
   → auto-plan-brief → /plan (internal, NO gate)
        → resolve every fork to the simplest ticket-grounded option;
          log each DECISIVE fork + the alternative rejected → DECISIONS.md
-  → author acceptance tests (separate step, after the plan, independent of the build)
-  → branch off default → build per plan (must SATISFY the acceptance tests, not edit them)
-  ┌─ build↔verify loop (budget: 3 build attempts) ──────────────────────────────┐
-  │   independent verifier (fresh context) → falsify vs criteria + review test   │
-  │   diff (weakened-old AND vacuous-new) → verdict                              │
-  │     verified      → exit loop, PR ready                                       │
-  │     falsified     → hand verdict back to builder, retry (within budget)       │
-  │     couldn't-verify / budget exhausted → exit loop, PR = DRAFT + flag         │
+  → branch off default → persist PLAN.md
+  → /auto-author-acceptance-tests → COMMITS the tests (= the build's base) → capture base = HEAD
+  → build per plan (/auto-implement-brief; must SATISFY the acceptance tests, never edit them)
+  ┌─ build↔verify loop (orchestrator owns budget: 3 build attempts) ─────────────┐
+  │   /auto-verify-build — FRESH subagent per pass, falsify vs criteria + review  │
+  │   test diff (weakened-old · vacuous-new · edited-acceptance) → VERIFICATION.md │
+  │     verified      → exit loop                                                  │
+  │     falsified     → hand named failures back to builder as a FIX task (budget) │
+  │     couldn't-verify / budget exhausted → exit loop (→ draft PR)                │
   │   diff-time no-fly breach → abort before commit, comment on ticket            │
   └──────────────────────────────────────────────────────────────────────────────┘
   → /code-review (effort ∝ diff)
-  → /auto-pr  — body LEADS with ⚠️ decisions-to-confirm (ranked) + verdict + test-integrity report
+  → /auto-pr  — reads DECISIONS.md + VERIFICATION.md; body LEADS with ⚠️ decisions +
+                verdict + test-integrity; opens READY only if verified, else DRAFT
   → STOP. Never merges. Merge = the (async) human gate.
 ```
 
@@ -80,45 +82,47 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
      the **alternative rejected**. These become the ⚠️ block in the PR (step 9).
    Keep decisive flags **few and ranked** — they are the reviewer's attention budget.
 
-6. **Author the acceptance tests — separately, after the plan.** A dedicated step (a fresh role, not
-   the builder) writes tests from the ticket's **acceptance criteria**, now that the plan fixes the
-   intended surface. Key them on **user-visible behaviour + stable `data-testid`s the builder must
-   honour** — never on internal selectors the builder will choose, or they fail for the wrong reason.
-   The builder must **satisfy** these, not edit them.
+6. **Branch, persist the plan, then author + commit the acceptance tests.** Order matters:
+   - **Branch off default** first — if on `main` / `master`, `git switch -c <branch>` named from `<task>`
+     (carry the ticket key so `/auto-pr` detects it); already on a feature branch → use it.
+   - **Persist the plan** to `.dev-flow/<task>/PLAN.md` — `/auto-author-acceptance-tests` reads it for the
+     intended surface (routes, components, `data-testid`s).
+   - **`/auto-author-acceptance-tests`** — writes acceptance tests from the criteria, independent of the
+     implementation, and **commits them** (`Add acceptance tests for <task>`), recording the protected set
+     in `.dev-flow/<task>/ACCEPTANCE_TESTS.md`.
+   - **Capture `base = git rev-parse HEAD`** *after* that commit. The acceptance tests are now *in* the
+     base, so any later builder edit to one surfaces in `git diff <base>` — this is what makes "satisfy,
+     don't edit" enforceable, not aspirational. (Capture fails — unborn branch — → use the skill's hash
+     fallback.)
 
-7. **Branch, then build.** If on the repo's default branch, `git switch -c <branch>` named from
-   `<task>` (carry the ticket key so `/auto-pr` detects it). Persist the plan to `.dev-flow/<task>/PLAN.md`.
-   Then build per the plan (`auto-implement-brief` discipline) in logical increments, `/auto-commit` each clean
-   increment right away with a proportional Decision Log. **Stay in scope.** The builder satisfies the
-   acceptance tests from step 6; it does not modify them.
+7. **Build.** Build per the plan (`/auto-implement-brief` discipline) in logical increments,
+   `/auto-commit` each clean increment right away with a proportional Decision Log. **Stay in scope.** The
+   builder must **satisfy** the acceptance tests from step 6 by changing code — it **never edits** them
+   (an edit is a flagged breach at verify).
 
-8. **Build↔verify loop (the engine; budget = 3 build attempts).** Spawn an **independent verifier in
-   fresh context** (no builder session state). It does two jobs and returns a **structured verdict**:
-   - **Falsify** the change against the acceptance criteria — black-box via Playwright against the
-     running app + the unit tests, as a separate evidence stream from the builder's own claims.
-   - **Adversarially review the test diff** for tampering, **both directions**: weakened *old* tests
-     (assertion count down; `.skip` / `.only` / `xit` / `todo` added; a test deleted; coverage dropped
-     on touched lines) **and** vacuous *new* tests (tautologies like `expect(true)` padding the count
-     up). Any builder edit to a step-6 acceptance test is a **flagged breach**.
-   Verdict handling: `verified` → exit, PR ready · `falsified` → hand the verdict back to the builder,
-   fix, re-verify **within budget** · `couldn't-verify` (subjective / unprovable criterion) or **budget
-   exhausted** → exit, PR becomes a **draft** flagged *"couldn't satisfy <criterion> after N
-   attempts."* Never loop forever; never emit a confident "ready" PR the verifier didn't confirm.
+8. **Build↔verify loop — the engine (this orchestrator owns the budget: 3 build attempts).** After each
+   build attempt, run **`/auto-verify-build` as a fresh subagent** (no builder context) given the diff
+   since `base`, the acceptance criteria, and the protected test paths. It falsifies against the criteria
+   (black-box Playwright + the suite) and adversarially reviews the test diff (weakened-old · vacuous-new
+   · edited-acceptance), then writes a structured verdict to `.dev-flow/<task>/VERIFICATION.md`. Handle it:
+   - **verified** → exit the loop.
+   - **falsified** → hand the **named failures** back to `/auto-implement-brief` as a **fix task** (not a
+     fresh build) and re-verify — **re-spawn a NEW verifier each pass**; never reuse one, or you
+     reintroduce the self-grading the independence is for. Stop at the 3-attempt budget.
+   - **couldn't-verify** (app won't start / Playwright down / subjective criterion) **or budget
+     exhausted** → exit; the PR becomes a **draft** (decided by `/auto-pr` from the verdict, step 9).
+   Never loop forever; never emit a confident "ready" PR the verifier didn't confirm.
    **Diff-time no-fly check:** before each commit and before any side-effecting verify command, re-check
-   the no-fly denylist against everything changed since the build's base — a breach → **abort before
-   committing**, comment on the ticket.
+   the no-fly denylist against everything changed since `base` — a breach → **abort before committing**,
+   comment on the ticket.
 
-9. **code-review → PR (the decision artifact).** Run `/code-review` at effort proportional to the diff.
-   Then `/auto-pr` — but the body is built for the reviewer's yes/no and **leads** with, in order:
-   - **⚠️ Decisions to confirm** — the ranked decisive forks from `DECISIONS.md`, each with the
-     alternative rejected. *Pinned at the top; never buried.*
-   - **Verification verdict** — `verified` / `couldn't-verify` / `draft: couldn't satisfy X`, stated
-     plainly (it is LLM judgment, not ground truth — say so).
-   - **Test-integrity report** — tests added/changed/removed, any tamper flags.
-   - **Under-specification signal** — how many assumptions this ticket required.
-   - A lightweight **"reject with one reason"** prompt so a "no" is captured as `no — because X`
-     (feeds the next run; cheaper than a cold restart). Then the synthesised Decision Log as usual.
-   The PR opens as **ready** only on a `verified` verdict; otherwise **draft**. **It never merges.**
+9. **code-review → PR (the decision artifact).** Run `/code-review` at effort proportional to the diff;
+   `/auto-commit` any fixes. Then **`/auto-pr`** — it reads `DECISIONS.md` + `VERIFICATION.md` and owns
+   the gate body: it **leads** with the ⚠️ ranked decisions-to-confirm, the verification verdict (LLM
+   judgment, not ground truth), the test-integrity report, and the assumption count, and ends with a
+   "reject with one reason" prompt. **`/auto-pr` is the single owner of ready-vs-draft** — it opens
+   `ready` only on a `verified` verdict, otherwise `--draft` (don't duplicate that decision here). **It
+   never merges.**
 
 ## Guards
 

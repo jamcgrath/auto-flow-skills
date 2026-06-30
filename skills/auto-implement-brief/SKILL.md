@@ -12,30 +12,39 @@ Don't skip straight to coding.
 ## Steps
 
 1. **Parse the brief into a checklist.** Restate each feature / acceptance item as a concrete,
-   testable line. If anything is ambiguous, ask now — one batched question, not mid-build.
+   testable line. If anything is ambiguous, **resolve it to the simplest ticket-grounded option and
+   log the decision to `.dev-flow/<task>/DECISIONS.md`** — never pause to ask (this runs unattended).
+   **On a fix iteration** (re-invoked by `/auto-dev-flow` with a `/auto-verify-build` verdict), don't
+   re-parse from scratch — address only the named failing criteria.
 
 2. **Survey before building.** For each item, search the codebase for what to reuse: existing
    props, components, renderers, hooks, utilities, conventions. This is the step that prevents
    the "wrapper instead of the existing `linkTarget` prop" class of mistake. Hand broad
    searching to an `Explore` subagent so it stays off the main thread and can't mutate state.
 
-3. **Show the reuse plan and pause.** Before writing code, present a short table:
+3. **Decide the reuse plan — log it, don't pause.** Before writing code, settle a short reuse plan:
 
    | Brief item | Reuse (existing) | New (only if needed) | Files |
 
-   Flag anywhere you're adding a new abstraction, with the reason in one line. Wait for my OK.
+   Anywhere you're adding a new abstraction, **log it to `.dev-flow/<task>/DECISIONS.md`** with the
+   reason in one line (it surfaces in the PR's ⚠️ decisions block). **Do not wait for approval** — the
+   human reviews at the PR, which is the gate.
 
 4. **Implement minimally, item by item.** Smallest change that satisfies each item; reuse what
    the plan committed to. No drive-by refactors, extra flags, or redundant deriveds. Stay in scope.
 
 5. **Verify behaviour, not just compilation.** Run the project's lint + typecheck. For
-   UI/behavioural items, verify in a real browser (Playwright/Chrome) and report what you
-   actually observed against the acceptance items.
+   UI/behavioural items, verify in a real browser (Playwright/Chrome) and report what you actually
+   observed against the acceptance items. This is your **own** check — the *trusted* verification is
+   `/auto-verify-build` (independent, fresh context). You must make the **acceptance tests** (authored
+   before the build by `/auto-author-acceptance-tests`) pass by **changing the code**, never by editing
+   the tests — an edit to a protected acceptance test is a flagged breach.
 
 6. **Report, then commit.** Summarise each brief item → done / blocked, noting what was reused
-   vs newly added. Confirm git state (`git status`), then commit (grouped logically) and push if asked.
+   vs newly added. Confirm git state (`git status`), then `/auto-commit` each logical increment.
+   **Don't push or open a PR** — that's `/auto-pr`'s job at the end of the flow.
 
 ## Notes
-- The reuse survey + plan-confirm in steps 2–3 *is* the point of this skill — don't collapse it
-  into "I'll just start coding."
+- The reuse survey in steps 2–3 *is* the point of this skill — don't collapse it into "I'll just
+  start coding." In auto mode the plan-*confirm* becomes a **logged decision**, not a human gate.
 - For a large brief, build and verify in slices rather than one giant pass.

@@ -15,10 +15,19 @@ swaps **both** for automated approvers. dev-flow already frames this as the inte
 > The REVIEW gate (step 8) is **not** swappable for now — even an unattended run stops there for a
 > human before the PR.
 
-auto-dev-flow is that "for now" lifted. It reuses the same chain and the same delegated skills
-(`verify-ticket → plan-brief → /plan → build → verify → code-review → /pr`) **unchanged**. Everything
-new lives in five places only: the fork-resolution policy, the independent verifier, the test-integrity
-defenses, the decision-legibility synthesis into the PR, and fully non-interactive operation.
+auto-dev-flow is that "for now" lifted. It runs the same chain, but as its **own vendored copies**
+(`auto-verify-ticket → auto-plan-brief → /plan → build → verify → code-review → auto-pr`) — **not** a
+runtime dependency on dev-flow-skills. Everything new lives in five places only: the fork-resolution
+policy, the independent verifier, the test-integrity defenses, the decision-legibility synthesis into
+the PR, and fully non-interactive operation.
+
+**Packaging — vendored, not a dependency (drift is the goal).** dev-flow is the author's daily driver
+for hands-on work; auto-flow must be able to retune its underlying skills for unattended mode
+**without disturbing dev-flow**. So the chain is copied into this repo under an `auto-` prefix
+(`auto-verify-ticket`, …) rather than imported, and the prefix also avoids a skill-name collision when
+both plugins are installed locally (Phase 1). *Rejected — declare a dependency on dev-flow-skills and
+don't vendor:* it couples the two, so any auto-mode tweak to a shared skill would change dev-flow's
+behaviour too. Duplication + intentional drift is the price; isolation is the point.
 
 ## Core principle: the PR is the gate
 
@@ -45,7 +54,7 @@ yes/no decision.** A wrong PR is cheap; a human *fooled into merging* a wrong PR
    refuses good tickets (false negatives). The **PR-as-probe** insight clinched it: sometimes building
    the thing is how you *discover* the ticket was wrong, and that's cheap discovery, not waste. So the
    skill **always produces a PR** except for three hard refusals: a **confabulation** (caught by
-   verify-ticket), a **no-fly path**, or a **runaway**. Fork *count* is surfaced to the reviewer as an
+   auto-verify-ticket), a **no-fly path**, or a **runaway**. Fork *count* is surfaced to the reviewer as an
    under-specification signal — never used to refuse.
 
 3. **Honest, legible PR.** The reviewer's decision is only as good as what it's based on. So: few,

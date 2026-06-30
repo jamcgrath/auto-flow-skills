@@ -1,6 +1,6 @@
 ---
 name: auto-dev-flow
-description: Run the dev flow fully unattended — ticket in, pull request out, with no human in the loop. It is dev-flow with BOTH human gates swapped for automated approvers: it resolves ambiguities itself (decide-and-flag), verifies the result with an independent falsifying agent inside a bounded build↔verify loop, and opens a PR whose body surfaces every decision it made — because the human's MERGE decision is the only gate. It never merges; the PR is the asynchronous review gate. It refuses (commenting back on the ticket, opening no PR) only on a confabulation, a no-fly path (auth / payments / secrets / migrations), or a runaway. Phase 1 runs locally for tuning but behaves identically to an unattended cloud run — fully non-interactive, it never asks a question. See SPEC.md (same dir) for the design rationale and dev-flow for the underlying chain. Use when the user says "auto dev flow", "/auto-dev-flow <ticket>", or wants a ticket built to a PR without supervision.
+description: Run the dev flow fully unattended — ticket in, pull request out, with no human in the loop. It is dev-flow with BOTH human gates swapped for automated approvers: it resolves ambiguities itself (decide-and-flag), verifies the result with an independent falsifying agent inside a bounded build↔verify loop, and opens a PR whose body surfaces every decision it made — because the human's MERGE decision is the only gate. It never merges; the PR is the asynchronous review gate. It refuses (commenting back on the ticket, opening no PR) only on a confabulation, a no-fly path (auth / payments / secrets / migrations), or a runaway. Phase 1 runs locally for tuning but behaves identically to an unattended cloud run — fully non-interactive, it never asks a question. See SPEC.md (same dir) for the design rationale; it ships its own vendored chain (auto-verify-ticket, auto-plan-brief, auto-implement-brief, auto-commit, auto-pr), modeled on dev-flow but free to drift from it. Use when the user says "auto dev flow", "/auto-dev-flow <ticket>", or wants a ticket built to a PR without supervision.
 ---
 
 # auto-dev-flow
@@ -10,8 +10,9 @@ gate before the PR); **auto-dev-flow swaps both for automated approvers** and ru
 human in the loop. It is the "for now" that dev-flow's own note anticipated lifting — see `SPEC.md`
 for the full rationale and the decisions ruled out.
 
-It **adds no new chain** — it runs dev-flow's existing skills (`verify-ticket → plan-brief → /plan →
-build → verify → /code-review → /pr`) unchanged. Everything new is confined to five things: the
+It **adds no new chain of its own** — it runs auto-flow's vendored copies of dev-flow's skills
+(`auto-verify-ticket → auto-plan-brief → /plan → build → verify → /code-review → auto-pr`), free to
+drift from dev-flow to suit auto mode. Everything new is confined to five things: the
 **fork-resolution policy**, the **independent verifier** + the bounded **build↔verify loop**, the
 **test-integrity defenses**, the **decision-legibility synthesis** into the PR, and **fully
 non-interactive operation**.
@@ -23,8 +24,8 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
 ```
 /auto-dev-flow <ticket>            (NON-INTERACTIVE — never asks a question, local or cloud)
   → intake circuit-breakers: no-fly path? runaway? → if tripped: comment on ticket, open NO pr
-  → [verify-ticket]   confabulation → comment on ticket, open NO pr · else flags flow forward
-  → plan-brief → /plan (internal, NO gate)
+  → [auto-verify-ticket]   confabulation → comment on ticket, open NO pr · else flags flow forward
+  → auto-plan-brief → /plan (internal, NO gate)
        → resolve every fork to the simplest ticket-grounded option;
          log each DECISIVE fork + the alternative rejected → DECISIONS.md
   → author acceptance tests (separate step, after the plan, independent of the build)
@@ -38,7 +39,7 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
   │   diff-time no-fly breach → abort before commit, comment on ticket            │
   └──────────────────────────────────────────────────────────────────────────────┘
   → /code-review (effort ∝ diff)
-  → /pr  — body LEADS with ⚠️ decisions-to-confirm (ranked) + verdict + test-integrity report
+  → /auto-pr  — body LEADS with ⚠️ decisions-to-confirm (ranked) + verdict + test-integrity report
   → STOP. Never merges. Merge = the (async) human gate.
 ```
 
@@ -60,13 +61,13 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
    Fork *count* is **not** a refusal — a ticket needing many assumptions still gets a PR; the count is
    surfaced to the reviewer as an under-specification signal (step 9).
 
-3. **verify-ticket (if an external item).** Run `/verify-ticket` → `.dev-flow/<task>/TICKET_CONTEXT.md`.
+3. **auto-verify-ticket (if an external item).** Run `/auto-verify-ticket` → `.dev-flow/<task>/TICKET_CONTEXT.md`.
    It flags drift and flows on; the one stop is a **confabulation** (a ticket premised on something the
    repo isn't). On the unattended path a confabulation → **comment the evidence on the ticket and open
    no PR** (instead of dev-flow's human override prompt). Otherwise its flags ride forward as open
    forks for step 5.
 
-4. **plan-brief → plan (internal, no gate).** Run `/plan-brief` → `.dev-flow/<task>/PLAN_BRIEF.md`,
+4. **auto-plan-brief → plan (internal, no gate).** Run `/auto-plan-brief` → `.dev-flow/<task>/PLAN_BRIEF.md`,
    then design the approach in `/plan` mode **strictly within scope**. The PLAN gate is *swapped, not
    skipped*: planning still happens; only the human *approval* of it is replaced by the fork policy +
    the verifier loop below.
@@ -86,8 +87,8 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
    The builder must **satisfy** these, not edit them.
 
 7. **Branch, then build.** If on the repo's default branch, `git switch -c <branch>` named from
-   `<task>` (carry the ticket key so `/pr` detects it). Persist the plan to `.dev-flow/<task>/PLAN.md`.
-   Then build per the plan (`implement-brief` discipline) in logical increments, `/commit` each clean
+   `<task>` (carry the ticket key so `/auto-pr` detects it). Persist the plan to `.dev-flow/<task>/PLAN.md`.
+   Then build per the plan (`auto-implement-brief` discipline) in logical increments, `/auto-commit` each clean
    increment right away with a proportional Decision Log. **Stay in scope.** The builder satisfies the
    acceptance tests from step 6; it does not modify them.
 
@@ -108,7 +109,7 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
    committing**, comment on the ticket.
 
 9. **code-review → PR (the decision artifact).** Run `/code-review` at effort proportional to the diff.
-   Then `/pr` — but the body is built for the reviewer's yes/no and **leads** with, in order:
+   Then `/auto-pr` — but the body is built for the reviewer's yes/no and **leads** with, in order:
    - **⚠️ Decisions to confirm** — the ranked decisive forks from `DECISIONS.md`, each with the
      alternative rejected. *Pinned at the top; never buried.*
    - **Verification verdict** — `verified` / `couldn't-verify` / `draft: couldn't satisfy X`, stated
@@ -142,8 +143,9 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
   ambiguous-answering verifier, or an un-capturable build base → **comment on the ticket and stop**;
   never fail open to a confident PR. (Phase 2: Jira via Rovo may not auth headless — prefer GitHub
   issues, or solve service-auth first.)
-- **Thin orchestration.** Like dev-flow, it delegates to the existing skills unchanged; its own logic
-  is confined to the five new things named above. It never reimplements a delegated skill's behaviour.
+- **Thin orchestration.** Like dev-flow, it delegates to its own vendored copies of dev-flow's skills
+  (free to drift); its own logic is confined to the five new things named above. It never reimplements
+  a delegated skill's behaviour.
 - **`.dev-flow/<task>/` stays git-ignored scratch.** Visibility comes from *promoting* decisions to
   the PR + a comment on the ticket (and, in Phase 2, a structured emission for the learning loop) — not
   from committing the scratchpad.

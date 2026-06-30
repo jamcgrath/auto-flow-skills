@@ -1,7 +1,7 @@
 # auto-flow-skills
 
 An **unattended**, ticket-to-PR dev flow for [Claude Code](https://claude.com/claude-code), packaged
-as one installable plugin. It is the autonomous sibling of
+as one **self-contained** installable plugin. It is the autonomous counterpart of
 [dev-flow-skills](https://github.com/jamcgrath/dev-flow-skills): **ticket in → pull request out, with
 no human in the loop.**
 
@@ -18,22 +18,26 @@ anything ships.
 > review, not as trusted automation. The design rationale lives in
 > [`skills/auto-dev-flow/SPEC.md`](skills/auto-dev-flow/SPEC.md).
 
-## Why a separate skill (not a flag on dev-flow)
+## Why a separate plugin (not a flag on dev-flow)
 
 dev-flow's gates are deliberately human — that's the point of it for hands-on work. Removing them
-isn't a setting; it changes the safety model. So auto-flow is its own thing, and it relocates the
+isn't a setting; it changes the safety model. So auto-flow is its own plugin, and it relocates the
 guarantee rather than dropping it: *every diff is still seen before it leaves the repo* — just at
 **merge** instead of before push. A wrong PR is cheap (close it — the build was a probe that often
 reveals the ticket itself was wrong); a human *fooled into merging* a wrong PR is not. Everything in
 the flow exists to make that one yes/no well-informed.
+
+It also **vendors its own copies** of the underlying chain (see below) rather than depending on
+dev-flow-skills — so it can retune those skills for unattended mode without ever disturbing dev-flow,
+the daily driver.
 
 ## The flow
 
 ```
 /auto-dev-flow <ticket>            (NON-INTERACTIVE — never asks a question, local or cloud)
   → intake circuit-breakers: no-fly path? runaway? → if tripped: comment on ticket, open NO pr
-  → [verify-ticket]   confabulation → comment on ticket, open NO pr · else flags flow forward
-  → plan-brief → /plan (internal, NO gate)
+  → [auto-verify-ticket]   confabulation → comment on ticket, open NO pr · else flags flow forward
+  → auto-plan-brief → /plan (internal, NO gate)
        → resolve every fork to the simplest ticket-grounded option;
          log each DECISIVE fork + the alternative rejected → DECISIONS.md
   → author acceptance tests (separate step, after the plan, independent of the build)
@@ -44,7 +48,7 @@ the flow exists to make that one yes/no well-informed.
   │     verified → PR ready · falsified → retry · couldn't-verify/exhausted → DRAFT │
   └──────────────────────────────────────────────────────────────────────────────┘
   → /code-review (effort ∝ diff)
-  → /pr  — body LEADS with ⚠️ decisions-to-confirm (ranked) + verdict + test-integrity report
+  → /auto-pr  — body LEADS with ⚠️ decisions-to-confirm (ranked) + verdict + test-integrity report
   → STOP. Never merges. Merge = the (async) human gate.
 ```
 
@@ -53,21 +57,22 @@ the flow exists to make that one yes/no well-informed.
 | Skill | Role |
 |---|---|
 | `auto-dev-flow` | The unattended orchestrator — ticket → PR with no human in the loop |
+| `auto-verify-ticket` | reconcile an externally-authored ticket against the code (confabulation → refuse) |
+| `auto-plan-brief` | feature recon — gather grounded context for `/plan` mode |
+| `auto-implement-brief` | build the plan the lean way — reuse survey first, then minimal build |
+| `auto-commit` | commit with a proportional Decision Log |
+| `auto-pr` | open the PR whose body synthesises the branch's Decision Logs |
 
-It bundles only the orchestrator. The chain it runs is **delegated, unchanged**, to skills that live
-in **dev-flow-skills** (see below).
+`/code-review` is a Claude Code built-in, used by the flow but not bundled here.
 
-## Depends on dev-flow-skills
+## Self-contained — vendored, not dependent
 
-auto-dev-flow is a thin orchestrator: it delegates to `verify-ticket`, `plan-brief`, `implement-brief`,
-`commit`, and `pr` from
-[dev-flow-skills](https://github.com/jamcgrath/dev-flow-skills), plus the `/code-review` built-in. The
-only logic it adds is the five unattended-specific pieces: the fork-resolution policy, the independent
-verifier + bounded build↔verify loop, the test-integrity defenses, the decision-legibility synthesis
-into the PR, and fully non-interactive operation.
-
-**Install dev-flow-skills alongside this** so those skills are reachable — they are not vendored here
-(copies would drift from the originals).
+The five sub-skills above are **vendored copies** of their dev-flow-skills equivalents, carried here
+under an `auto-` prefix. This is deliberate: auto-flow needs to be able to change an underlying skill
+to suit unattended mode **without touching dev-flow** (the author's daily driver), and the prefix
+avoids a name collision when both plugins are installed side by side. The cost is duplication and
+intentional drift; the benefit is total isolation. See
+[`skills/auto-dev-flow/SPEC.md`](skills/auto-dev-flow/SPEC.md) for the full rationale.
 
 ## Layout
 
@@ -77,28 +82,30 @@ auto-flow-skills/
   skills/auto-dev-flow/
     SKILL.md                        # the operational playbook
     SPEC.md                         # the design rationale + decisions ruled out
+  skills/auto-verify-ticket/SKILL.md
+  skills/auto-plan-brief/SKILL.md
+  skills/auto-implement-brief/SKILL.md
+  skills/auto-commit/SKILL.md
+  skills/auto-pr/SKILL.md
 ```
 
 ## Install
 
-### As a plugin
-
 ```sh
-/plugin marketplace add jamcgrath/dev-flow-skills   # the delegated chain
-/plugin install dev-flow@dev-flow-skills
-
-/plugin marketplace add jamcgrath/auto-flow-skills  # this plugin
+/plugin marketplace add jamcgrath/auto-flow-skills
 /plugin install auto-flow@auto-flow-skills
 ```
 
-Then `/auto-dev-flow <ticket>`.
+Then `/auto-dev-flow <ticket>`. No other plugin is required — the chain is bundled.
 
 ### For development (live edits)
 
-Symlink the skill folder into your user skills dir so edits in this repo are live immediately:
+Symlink the skill folders into your user skills dir so edits in this repo are live immediately:
 
 ```sh
-ln -s "$PWD/skills/auto-dev-flow" ~/.claude/skills/auto-dev-flow
+for d in auto-dev-flow auto-verify-ticket auto-plan-brief auto-implement-brief auto-commit auto-pr; do
+  ln -s "$PWD/skills/$d" ~/.claude/skills/"$d"
+done
 ```
 
 ## Things to know before you point this at anything
@@ -110,9 +117,9 @@ ln -s "$PWD/skills/auto-dev-flow" ~/.claude/skills/auto-dev-flow
   skill than the one that ships.
 - **It refuses on three things only**, by commenting on the ticket and opening **no** PR: a **no-fly
   path** (auth / permissions / secrets / payments / migrations / deploy-install-network ops), a
-  **confabulation** (caught by verify-ticket), or a **runaway**. Everything else is attempted — the
-  human's merge decision is the competence boundary, not an up-front eligibility guess. **Confirm the
-  no-fly list against your own risk surface before use** (`skills/auto-dev-flow/SKILL.md`, step 2).
+  **confabulation** (caught by auto-verify-ticket), or a **runaway**. Everything else is attempted —
+  the human's merge decision is the competence boundary, not an up-front eligibility guess. **Confirm
+  the no-fly list against your own risk surface before use** (`skills/auto-dev-flow/SKILL.md`, step 2).
 - **Honest over confident.** A `couldn't-verify` or budget-exhausted result is a **draft** PR that says
   so — never dressed up as ready. The worst failure is a PR that falsely claims "verified," because it
   corrupts the merge decision at its source.
@@ -123,8 +130,8 @@ ln -s "$PWD/skills/auto-dev-flow" ~/.claude/skills/auto-dev-flow
 - **Phase 2 (cloud) gotchas, when you get there.** Jira via the Atlassian MCP may not authenticate in
   a headless run — GitHub issues + a `gh` token are the path of least resistance for v1. Provisioning
   the environment (dev server + Playwright + a write-scoped token) is most of the setup effort.
-- **`.dev-flow/` scratch dir.** The delegated recon skills write context files under `.dev-flow/<task>/`
-  in whatever repo you run them in (already in this repo's `.gitignore`). Visibility comes from
+- **`.dev-flow/` scratch dir.** The recon skills write context files under `.dev-flow/<task>/` in
+  whatever repo you run them in (already in this repo's `.gitignore`). Visibility comes from
   *promoting* decisions to the PR + a ticket comment — not from committing the scratchpad.
 
 ## License

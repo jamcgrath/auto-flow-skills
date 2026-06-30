@@ -10,11 +10,16 @@
   "plugins": [
     {
       "name": "auto-flow",
-      "description": "Unattended AI-assisted dev flow: ticket in, pull request out, no human in the loop. It is dev-flow with BOTH human gates swapped for automated approvers — decide-and-flag on ambiguities, an independent falsifying verifier inside a bounded build↔verify loop, and a PR whose body surfaces every decision so the human's MERGE is the only gate. It never merges; the PR is the asynchronous review gate. Bundles the auto-dev-flow orchestrator. Delegates the chain (verify-ticket, plan-brief, implement-brief, commit, pr) to dev-flow-skills — install that marketplace alongside this one.",
+      "description": "Unattended AI-assisted dev flow: ticket in, pull request out, no human in the loop. It is dev-flow with BOTH human gates swapped for automated approvers — decide-and-flag on ambiguities, an independent falsifying verifier inside a bounded build↔verify loop, and a PR whose body surfaces every decision so the human's MERGE is the only gate. It never merges; the PR is the asynchronous review gate. Bundles the auto-dev-flow orchestrator plus its own vendored copies of the chain (auto-verify-ticket, auto-plan-brief, auto-implement-brief, auto-commit, auto-pr) — fully self-contained, with no dependency on dev-flow-skills, so its underlying skills can drift freely to suit auto mode.",
       "source": "./",
       "strict": false,
       "skills": [
-        "./skills/auto-dev-flow"
+        "./skills/auto-dev-flow",
+        "./skills/auto-verify-ticket",
+        "./skills/auto-plan-brief",
+        "./skills/auto-implement-brief",
+        "./skills/auto-commit",
+        "./skills/auto-pr"
       ]
     }
   ]

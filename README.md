@@ -5,6 +5,10 @@ as one **self-contained** installable plugin. It is the autonomous counterpart o
 [dev-flow-skills](https://github.com/jamcgrath/dev-flow-skills): **ticket in → pull request out, with
 no human in the loop.**
 
+Where dev-flow is tuned to one developer's **front-end** work, auto-flow aims to handle a change at
+**any layer** — UI, backend logic, API/service, data, CLI — by **matching verification to where the
+change lives** (Playwright for UI, unit/integration/DB otherwise) rather than defaulting to the browser.
+
 dev-flow keeps two human gates (PLAN approval, REVIEW before the PR). **auto-flow swaps both for
 automated approvers** — it resolves ambiguities itself, verifies the result with an independent
 falsifying agent, and opens a PR whose body surfaces every decision it made. The PR is the only gate:

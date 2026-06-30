@@ -104,8 +104,9 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
 8. **Build↔verify loop — the engine (this orchestrator owns the budget: 3 build attempts).** After each
    build attempt, run **`/auto-verify-build` as a fresh subagent** (no builder context). It reads the
    on-disk artifacts itself, but **pass `base` into its spawn explicitly** — a fresh context can't
-   recompute the rev (it's also recorded in `ACCEPTANCE_TESTS.md` as a backstop). It falsifies against the criteria
-   (black-box Playwright + the suite) and adversarially reviews the test diff (weakened-old · vacuous-new
+   recompute the rev (it's also recorded in `ACCEPTANCE_TESTS.md` as a backstop). It falsifies against the
+   criteria **using each criterion's layer harness** (Playwright for UI, unit/integration/DB otherwise)
+   **+ the full suite** and adversarially reviews the test diff (weakened-old · vacuous-new
    · edited-acceptance), then writes a structured verdict to `.dev-flow/<task>/VERIFICATION.md`. Handle it:
    - **verified** → exit the loop.
    - **falsified** → hand the **named failures** back to `/auto-implement-brief` as a **fix task** (not a

@@ -37,6 +37,30 @@ isn't lost — it's *relocated* from before-push to before-merge. Nothing is shi
 yes. Therefore every design choice below exists to serve one thing: **the quality of the human's
 yes/no decision.** A wrong PR is cheap; a human *fooled into merging* a wrong PR is not.
 
+## Layer-aware verification — auto-flow is general-purpose
+
+dev-flow is tuned to one developer's **front-end** work; **auto-flow must handle a change at any layer**
+— UI, backend logic, API/service, data, CLI/library. So verification can't default to the browser:
+**the test modality follows the layer of the change.**
+
+| Change lives in… | Verification modality |
+|---|---|
+| UI / user flow | Playwright black-box (`data-testid`s) |
+| Pure logic / function | unit tests — inputs→outputs, edge/error paths |
+| API / service | integration / contract tests against the endpoint or service |
+| Data / schema | assertions against a seeded DB; migration up→down |
+| CLI / library | invoke and assert on output / exit code |
+| Pure refactor (no new behaviour) | the full existing suite stays green (regression-only) |
+
+Playwright is **one** evidence stream, selected only when the change is user-facing — not the default.
+Wired through both new skills: `auto-author-acceptance-tests` classifies each criterion by layer and
+authors the matching test type; `auto-verify-build` reaches each criterion through its layer's harness
+and reports `couldn't-verify` when *that* harness can't run (not when "the UI didn't show X"). Honest
+consequence: **backend verification is more substrate-hungry** (a DB, seed data, stubbed deps) than UI —
+most of that lands in Phase 2 (the cloud env), and it's where verdict *reliability* actually lives. Why
+verification is the load-bearing wall at all: removing both human gates moved all the verification weight
+onto one component, so the more autonomy, the more verification must carry.
+
 ## Settled decisions
 
 1. **Decide-and-flag at decisive forks.** With no human to ask, the skill resolves every ambiguity
@@ -108,8 +132,9 @@ exists to replace. The builder and the (re-spawned) verifier form a loop:
   vacuous *new* tests (tautologies like `expect(true)` that push the count *up*). The adversarial
   test-diff reviewer is pointed at both, because mutation testing — the real catch for vacuous tests —
   is deferred.
-- **Black-box Playwright is a separate evidence stream.** The verifier confirms acceptance criteria
-  through the running app, independent of the unit tests the builder wrote. Gamed unit tests + a
+- **The layer's black-box harness is a separate evidence stream.** The verifier confirms acceptance
+  criteria by exercising the change at its layer (the running app via Playwright for UI; the endpoint /
+  service / seeded DB otherwise), independent of the unit tests the builder wrote. Gamed unit tests + a
   black-box check that still fails = caught.
 - **Deferred:** mutation testing (does a test fail when the code is mutated?) — the strongest defense
   against tautological tests, but expensive; not day-one.

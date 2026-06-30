@@ -1,6 +1,6 @@
 ---
 name: auto-verify-build
-description: Auto-flow skill — the independent build verifier. Spawned as a FRESH subagent with no builder context, given only {diff since base, acceptance criteria, acceptance-test paths}, it tries to FALSIFY the change against the criteria (black-box Playwright + the test suite) and adversarially reviews the test diff for tampering, then writes a structured verdict (verified / couldn't-verify / falsified) to .dev-flow/<task>/VERIFICATION.md. ONE pass only — /auto-dev-flow owns the retry loop and budget. Fail-closed: if it can't verify, the verdict is couldn't-verify, never a false verified. Invoked by /auto-dev-flow after each build attempt.
+description: Auto-flow skill — the independent build verifier. Spawned as a FRESH subagent with no builder context, given only {diff since base, acceptance criteria, acceptance-test paths}, it tries to FALSIFY the change against the criteria through each criterion's layer harness (Playwright for UI, unit/integration/DB otherwise) + the full suite, and adversarially reviews the test diff for tampering, then writes a structured verdict (verified / couldn't-verify / falsified) to .dev-flow/<task>/VERIFICATION.md. ONE pass only — /auto-dev-flow owns the retry loop and budget. Fail-closed: if it can't verify, the verdict is couldn't-verify, never a false verified. Invoked by /auto-dev-flow after each build attempt.
 ---
 
 # auto-verify-build
@@ -23,10 +23,13 @@ accumulates the builder's state is just the self-grading this skill exists to re
    base, so any builder edit to one surfaces in the diff. Also read the acceptance criteria
    (`.dev-flow/<task>/TICKET_CONTEXT.md`) and the protected acceptance-test paths (same manifest).
 
-2. **Falsify against the criteria — don't confirm the happy path.** Run the acceptance tests + the
-   project suite. For behavioural criteria, drive the running app via Playwright and actively try to
-   make each criterion **fail**. The **criteria are the spec**, not the builder's claims about what it
-   did.
+2. **Falsify against the criteria — using the harness for each criterion's layer.** Run the acceptance
+   tests + the **full** project suite. Reach each criterion the way its layer demands — **Playwright**
+   for UI, the **unit runner** for logic, an **HTTP / contract client** for API/service, a **seeded DB**
+   for data — and actively try to make it **fail** (edge/error inputs, not just the happy path).
+   Playwright is one stream, **not** the default. The **criteria are the spec**, not the builder's
+   claims. A change with **no new observable behaviour** (a refactor) is verified by the **full suite
+   staying green** — there's no new criterion, so a missing acceptance test is expected, not a failure.
 
 3. **Adversarially review the test diff — three tamper classes:**
    - **Weakened OLD tests** — assertion count down; `.skip` / `.only` / `xit` / `todo` added; a test
@@ -52,8 +55,9 @@ accumulates the builder's state is just the self-grading this skill exists to re
    Verdict rules:
    - **verified** — every *testable* criterion passes AND no tamper breach.
    - **falsified** — any criterion fails, OR any tamper breach.
-   - **couldn't-verify** — the app won't start, Playwright is unavailable, or a criterion is
-     unverifiable-by-nature (subjective). **Fail closed → this, never a false `verified`.**
+   - **couldn't-verify** — the **layer's harness can't run** (app / dev-server down, Playwright
+     unavailable, DB or dependent service unreachable), or a criterion is unverifiable-by-nature
+     (subjective). **Fail closed → this, never a false `verified`.**
 
 5. **Return the verdict; the orchestrator owns the loop.** `falsified` → `/auto-dev-flow` hands the
    named failures back to the builder as a **fix task** (within the 3-attempt budget). `couldn't-verify`

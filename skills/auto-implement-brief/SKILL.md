@@ -34,9 +34,10 @@ Don't skip straight to coding.
 4. **Implement minimally, item by item.** Smallest change that satisfies each item; reuse what
    the plan committed to. No drive-by refactors, extra flags, or redundant deriveds. Stay in scope.
 
-5. **Verify behaviour, not just compilation.** Run the project's lint + typecheck. For
-   UI/behavioural items, verify in a real browser (Playwright/Chrome) and report what you actually
-   observed against the acceptance items. This is your **own** check — the *trusted* verification is
+5. **Verify behaviour, not just compilation.** Run the project's lint + typecheck. Verify each item
+   **at the layer it lives** — a real browser (Playwright/Chrome) for UI, the unit/integration tests for
+   logic/API, a seeded DB for data — and report what you actually observed against the acceptance items.
+   This is your **own** check — the *trusted* verification is
    `/auto-verify-build` (independent, fresh context). You must make the **acceptance tests** (authored
    before the build by `/auto-author-acceptance-tests`) pass by **changing the code**, never by editing
    the tests — an edit to a protected acceptance test is a flagged breach.

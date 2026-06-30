@@ -1,6 +1,6 @@
 ---
 name: auto-author-acceptance-tests
-description: Auto-flow skill — author executable acceptance tests from a ticket's acceptance criteria, after /plan has fixed the surface but INDEPENDENT of the implementation, then COMMIT them so they become the build's base. Invoked by /auto-dev-flow between planning and building. Keys tests on user-visible behaviour + stable data-testids the builder must honour; the builder must SATISFY these tests, never edit them — committing them first is what makes any later edit visible in the diff. Half of auto-flow's test-integrity defense (the other half is /auto-verify-build). Non-interactive; never pauses for input.
+description: Auto-flow skill — author executable acceptance tests from a ticket's acceptance criteria, after /plan has fixed the surface but INDEPENDENT of the implementation, then COMMIT them so they become the build's base. Invoked by /auto-dev-flow between planning and building. Picks the test type per criterion's LAYER (UI → Playwright + data-testids, logic → unit, API/service → integration, data → seeded-DB) rather than defaulting to the browser — auto-flow is general-purpose, not front-end-only. The builder must SATISFY these tests, never edit them — committing them first is what makes any later edit visible in the diff. Half of auto-flow's test-integrity defense (the other half is /auto-verify-build). Non-interactive; never pauses for input.
 ---
 
 # auto-author-acceptance-tests
@@ -16,16 +16,26 @@ tests** → build → /auto-verify-build`. It writes tests, commits them, and re
 
 ## Steps
 
-1. **Read the criteria + the intended surface.** Acceptance criteria from
-   `.dev-flow/<task>/TICKET_CONTEXT.md`; the routes / components / `data-testid`s the plan intends from
-   `.dev-flow/<task>/PLAN.md`. Turn each criterion into one or more concrete, executable assertions.
+1. **Read the criteria, then classify each by layer.** Acceptance criteria from
+   `.dev-flow/<task>/TICKET_CONTEXT.md`; the intended surface from `.dev-flow/<task>/PLAN.md`. auto-flow
+   is **general-purpose** — for *each* criterion decide where the behaviour lives, because that picks the
+   test type:
+   - **UI / user flow** → Playwright black-box (key on user-visible behaviour + stable `data-testid`s)
+   - **Pure logic / function** → unit test on inputs→outputs, edge cases, error paths
+   - **API / service** → integration / contract test hitting the endpoint or calling the service
+   - **Data / schema** → assertions against a seeded DB (+ migration up→down)
+   - **CLI / library** → invoke and assert on output / exit code
 
-2. **Author tests independent of the implementation.** Key them on **user-visible behaviour + stable
-   `data-testid`s the builder must honour** — never on internal selectors or structure the builder will
-   choose, or the test fails for the wrong reason. Black-box where possible: Playwright against the
-   running app for behavioural criteria; unit tests for pure logic. The tests will reference
-   `data-testid`s that don't exist yet — that's the contract: **the tests define the testids, the
-   builder implements to them.**
+   `data-testid`s apply **only** to the UI layer — don't force a backend criterion through a UI mould. A
+   change with **no new observable behaviour** (a pure refactor) gets **no acceptance test** — record
+   that its verification is "the full suite stays green" (regression-only); don't invent a criterion.
+
+2. **Author each test independent of the implementation, in its layer's idiom.** Key on the **contract**
+   the builder must honour, never on internal structure it happens to choose (or the test fails for the
+   wrong reason): UI → behaviour + `data-testid`s; logic → function signature + return values; API →
+   endpoint + request/response shape; data → query results. Be **falsify-minded** — include the edge and
+   error cases, not just the happy path. The tests reference contracts that don't exist yet — that's the
+   bar: **the tests define the contract, the builder implements to it.**
 
 3. **Mark unverifiable criteria honestly.** A subjective / aesthetic criterion that can't be expressed
    as an executable assertion → record it as **unverifiable**. Do **not** fake a tautological test
@@ -56,8 +66,8 @@ tests** → build → /auto-verify-build`. It writes tests, commits them, and re
    ## Criterion → test
    - <criterion> → <test name / file>  ·  or:  unverifiable — <why>
 
-   ## data-testids the builder must expose
-   - <testid> — <what it marks>
+   ## Contracts the builder must expose (UI data-testids / function signatures / endpoints)
+   - <contract> — <what it is>
    ```
 
 ## Guards

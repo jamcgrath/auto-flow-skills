@@ -1,0 +1,20 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+
+# Flow scratch — the skills write context files under .dev-flow/<task>/; never commit them
+.dev-flow/

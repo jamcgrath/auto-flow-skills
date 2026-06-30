@@ -13,7 +13,8 @@ Don't skip straight to coding.
 
 1. **Parse the brief into a checklist.** Restate each feature / acceptance item as a concrete,
    testable line. If anything is ambiguous, **resolve it to the simplest ticket-grounded option and
-   log the decision to `.dev-flow/<task>/DECISIONS.md`** — never pause to ask (this runs unattended).
+   append the decision to `.dev-flow/<task>/DECISIONS.md`** (append, never overwrite — the orchestrator
+   logs there too) — never pause to ask (this runs unattended).
    **On a fix iteration** (re-invoked by `/auto-dev-flow` with a `/auto-verify-build` verdict), don't
    re-parse from scratch — address only the named failing criteria.
 
@@ -26,7 +27,7 @@ Don't skip straight to coding.
 
    | Brief item | Reuse (existing) | New (only if needed) | Files |
 
-   Anywhere you're adding a new abstraction, **log it to `.dev-flow/<task>/DECISIONS.md`** with the
+   Anywhere you're adding a new abstraction, **append it to `.dev-flow/<task>/DECISIONS.md`** with the
    reason in one line (it surfaces in the PR's ⚠️ decisions block). **Do not wait for approval** — the
    human reviews at the PR, which is the gate.
 

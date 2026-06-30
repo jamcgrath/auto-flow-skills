@@ -35,13 +35,21 @@ tests** → build → /auto-verify-build`. It writes tests, commits them, and re
    test files and commit `Add acceptance tests for <task>` (via `/auto-commit`). This commit becomes the
    **build's base**, so any later builder edit to an acceptance test shows up trivially in
    `git diff <base>` — that one fact is what turns "must not edit the tests" from an unenforceable
-   promise into a one-line check in `/auto-verify-build`. (Unborn branch / can't commit → fall back to
-   recording each authored file's path **and content hash** in the manifest so edits are still
-   detectable; commit-first is preferred.)
+   promise into a one-line check in `/auto-verify-build`. Two things to handle:
+   - This commit is **intentionally red** — the tests reference `data-testid`s / behaviour the build
+     hasn't added yet. If a pre-commit hook runs the suite it will reject the commit, so commit with
+     `--no-verify` (it goes green once the build lands).
+   - **Record the commit's sha as `base` in the manifest** (step 5) — `/auto-verify-build` runs in a
+     fresh context and cannot recompute it.
+   (Unborn branch / can't commit → fall back to recording each authored file's path **and content hash**
+   in the manifest so edits are still detectable; commit-first is preferred.)
 
 5. **Write the manifest** `.dev-flow/<task>/ACCEPTANCE_TESTS.md` — the **protected set**
    `/auto-verify-build` and the builder both read:
    ```
+   ## Base commit
+   <sha of the "Add acceptance tests" commit — /auto-verify-build diffs against this>
+
    ## Acceptance test files (protected — builder must satisfy, not edit)
    - <path>            (+ content hash, only on the can't-commit fallback)
 

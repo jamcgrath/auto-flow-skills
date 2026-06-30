@@ -77,9 +77,10 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
 5. **Resolve forks — decide-and-flag.** For every ambiguity, pick the **simplest option grounded in
    the ticket** and proceed. Classify as you go:
    - **Non-decisive** (an under-specified detail, two equivalent helpers) → resolve silently.
-   - **Decisive** (a choice that changes *what gets built*) → resolve, then **log it to
-     `.dev-flow/<task>/DECISIONS.md`** with: the fork, the option chosen, *why* (ticket-grounded), and
-     the **alternative rejected**. These become the ⚠️ block in the PR (step 9).
+   - **Decisive** (a choice that changes *what gets built*) → resolve, then **append it to
+     `.dev-flow/<task>/DECISIONS.md`** (one entry per decision — `/auto-implement-brief` appends here
+     too during the build, so append, never overwrite) with: the fork, the option chosen, *why*
+     (ticket-grounded), and the **alternative rejected**. These become the ⚠️ block in the PR (step 9).
    Keep decisive flags **few and ranked** — they are the reviewer's attention budget.
 
 6. **Branch, persist the plan, then author + commit the acceptance tests.** Order matters:
@@ -101,8 +102,9 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
    (an edit is a flagged breach at verify).
 
 8. **Build↔verify loop — the engine (this orchestrator owns the budget: 3 build attempts).** After each
-   build attempt, run **`/auto-verify-build` as a fresh subagent** (no builder context) given the diff
-   since `base`, the acceptance criteria, and the protected test paths. It falsifies against the criteria
+   build attempt, run **`/auto-verify-build` as a fresh subagent** (no builder context). It reads the
+   on-disk artifacts itself, but **pass `base` into its spawn explicitly** — a fresh context can't
+   recompute the rev (it's also recorded in `ACCEPTANCE_TESTS.md` as a backstop). It falsifies against the criteria
    (black-box Playwright + the suite) and adversarially reviews the test diff (weakened-old · vacuous-new
    · edited-acceptance), then writes a structured verdict to `.dev-flow/<task>/VERIFICATION.md`. Handle it:
    - **verified** → exit the loop.

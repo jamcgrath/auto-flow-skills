@@ -17,10 +17,11 @@ accumulates the builder's state is just the self-grading this skill exists to re
 
 ## Steps
 
-1. **Gather the evidence (read-only).** `git diff <base>` where `base` is the build's base — the
-   `Add acceptance tests for <task>` commit (so the authored tests are *in* the base and any edit to
-   them surfaces in the diff). Read the acceptance criteria (`.dev-flow/<task>/TICKET_CONTEXT.md`) and
-   the protected acceptance-test paths (`.dev-flow/<task>/ACCEPTANCE_TESTS.md`).
+1. **Gather the evidence (read-only).** `git diff <base>`, where `base` is the acceptance-test commit
+   sha **recorded in `.dev-flow/<task>/ACCEPTANCE_TESTS.md`** (and also passed to you by the
+   orchestrator) — you run fresh and cannot recompute it, so read it. The authored tests are *in* that
+   base, so any builder edit to one surfaces in the diff. Also read the acceptance criteria
+   (`.dev-flow/<task>/TICKET_CONTEXT.md`) and the protected acceptance-test paths (same manifest).
 
 2. **Falsify against the criteria — don't confirm the happy path.** Run the acceptance tests + the
    project suite. For behavioural criteria, drive the running app via Playwright and actively try to

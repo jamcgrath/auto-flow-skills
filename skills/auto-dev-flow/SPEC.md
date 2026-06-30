@@ -55,7 +55,11 @@ dev-flow is tuned to one developer's **front-end** work; **auto-flow must handle
 Playwright is **one** evidence stream, selected only when the change is user-facing — not the default.
 Wired through both new skills: `auto-author-acceptance-tests` classifies each criterion by layer and
 authors the matching test type; `auto-verify-build` reaches each criterion through its layer's harness
-and reports `couldn't-verify` when *that* harness can't run (not when "the UI didn't show X"). Honest
+and reports `couldn't-verify` when *that* harness can't run (not when "the UI didn't show X"). And it's
+**grounded in the repo at recon**: `/auto-plan-brief` inventories the actual test tooling (frameworks +
+run commands + which layer each covers, flagging layers with none), so authoring uses the framework that
+*exists* (Vitest, not Jest) and verifying runs the *real* command — and a missing harness is known up
+front, not discovered mid-verify. Honest
 consequence: **backend verification is more substrate-hungry** (a DB, seed data, stubbed deps) than UI —
 most of that lands in Phase 2 (the cloud env), and it's where verdict *reliability* actually lives. Why
 verification is the load-bearing wall at all: removing both human gates moved all the verification weight

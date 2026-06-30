@@ -24,7 +24,9 @@ accumulates the builder's state is just the self-grading this skill exists to re
    (`.dev-flow/<task>/TICKET_CONTEXT.md`) and the protected acceptance-test paths (same manifest).
 
 2. **Falsify against the criteria — using the harness for each criterion's layer.** Run the acceptance
-   tests + the **full** project suite. Reach each criterion the way its layer demands — **Playwright**
+   tests + the **full** project suite **using the repo's real commands** (from the Test Tooling
+   inventory in `PLAN_BRIEF.md` — e.g. `pnpm test:unit` / `pnpm test:e2e`, not a guessed `npm test`).
+   Reach each criterion the way its layer demands — **Playwright**
    for UI, the **unit runner** for logic, an **HTTP / contract client** for API/service, a **seeded DB**
    for data — and actively try to make it **fail** (edge/error inputs, not just the happy path).
    Playwright is one stream, **not** the default. The **criteria are the spec**, not the builder's

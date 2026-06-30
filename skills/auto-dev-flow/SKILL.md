@@ -69,7 +69,9 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
    no PR** (instead of dev-flow's human override prompt). Otherwise its flags ride forward as open
    forks for step 5.
 
-4. **auto-plan-brief → plan (internal, no gate).** Run `/auto-plan-brief` → `.dev-flow/<task>/PLAN_BRIEF.md`,
+4. **auto-plan-brief → plan (internal, no gate).** Run `/auto-plan-brief` → `.dev-flow/<task>/PLAN_BRIEF.md`
+   (its recon includes a **test-tooling inventory** — the frameworks + run commands
+   `/auto-author-acceptance-tests` and `/auto-verify-build` will use, and any layer with no harness),
    then design the approach in `/plan` mode **strictly within scope**. The PLAN gate is *swapped, not
    skipped*: planning still happens; only the human *approval* of it is replaced by the fork policy +
    the verifier loop below.

@@ -16,19 +16,23 @@ tests** → build → /auto-verify-build`. It writes tests, commits them, and re
 
 ## Steps
 
-1. **Read the criteria, then classify each by layer.** Acceptance criteria from
-   `.dev-flow/<task>/TICKET_CONTEXT.md`; the intended surface from `.dev-flow/<task>/PLAN.md`. auto-flow
-   is **general-purpose** — for *each* criterion decide where the behaviour lives, because that picks the
-   test type:
+1. **Read the criteria + the repo's test tooling, then classify each by layer.** Acceptance criteria
+   from `.dev-flow/<task>/TICKET_CONTEXT.md`; the intended surface from `.dev-flow/<task>/PLAN.md`; and
+   the **Test Tooling inventory** from `.dev-flow/<task>/PLAN_BRIEF.md` (the frameworks that actually
+   exist + their run commands). auto-flow is **general-purpose** — for *each* criterion decide where the
+   behaviour lives, because that picks the test type:
    - **UI / user flow** → Playwright black-box (key on user-visible behaviour + stable `data-testid`s)
    - **Pure logic / function** → unit test on inputs→outputs, edge cases, error paths
    - **API / service** → integration / contract test hitting the endpoint or calling the service
    - **Data / schema** → assertions against a seeded DB (+ migration up→down)
    - **CLI / library** → invoke and assert on output / exit code
 
-   `data-testid`s apply **only** to the UI layer — don't force a backend criterion through a UI mould. A
-   change with **no new observable behaviour** (a pure refactor) gets **no acceptance test** — record
-   that its verification is "the full suite stays green" (regression-only); don't invent a criterion.
+   `data-testid`s apply **only** to the UI layer — don't force a backend criterion through a UI mould.
+   Author each test in the framework the inventory says the repo **actually uses** (e.g. Vitest, not
+   Jest) — never introduce a new one; a criterion whose layer has **no tooling** in the repo is
+   **unverifiable (tooling gap)**, not licence to invent a harness. A change with **no new observable
+   behaviour** (a pure refactor) gets **no acceptance test** — record that its verification is "the full
+   suite stays green" (regression-only); don't invent a criterion.
 
 2. **Author each test independent of the implementation, in its layer's idiom.** Key on the **contract**
    the builder must honour, never on internal structure it happens to choose (or the test fails for the

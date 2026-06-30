@@ -1,6 +1,6 @@
 ---
 name: auto-plan-brief
-description: Auto-flow (unattended) variant of plan-brief, invoked by /auto-dev-flow — the autonomous twin of dev-flow's plan-brief, free to drift from it. First-pass info-gathering for a feature — read .dev-flow/<task>/TICKET_CONTEXT.md if it exists, otherwise work straight from the task description the user gives (ticket or no ticket), reconnoitre the codebase (files likely to change, similar implementations, related tests, constraints), and write .dev-flow/<task>/PLAN_BRIEF.md as grounded input for /plan mode. The portable entry to the feature path — works with or without a tracker; no Jira required. Reconnaissance, not a plan — it gathers context and stops; it does not design the approach or edit code. Primarily invoked by /auto-dev-flow; the unattended counterpart of dev-flow's plan-brief.
+description: Auto-flow (unattended) variant of plan-brief, invoked by /auto-dev-flow — the autonomous twin of dev-flow's plan-brief, free to drift from it. First-pass info-gathering for a feature — read .dev-flow/<task>/TICKET_CONTEXT.md if it exists, otherwise work straight from the task description the user gives (ticket or no ticket), reconnoitre the codebase (files likely to change, similar implementations, related tests, available test tooling, constraints), and write .dev-flow/<task>/PLAN_BRIEF.md as grounded input for /plan mode. The portable entry to the feature path — works with or without a tracker; no Jira required. Reconnaissance, not a plan — it gathers context and stops; it does not design the approach or edit code. Primarily invoked by /auto-dev-flow; the unattended counterpart of dev-flow's plan-brief.
 ---
 
 # auto-plan-brief
@@ -27,6 +27,14 @@ Second step of the feature path **when there's a ticket** (`auto-verify-ticket` 
    - the exact **files (and line anchors)** likely to change to satisfy the intent
    - the **closest existing implementation to copy**, named with its path + lines
    - **related tests** that cover the area
+   - **the test tooling the repo actually has** — inventory the frameworks + their run commands from
+     `package.json` scripts/devDeps and config files (`playwright.config`, `vitest.config`,
+     `jest.config`, `pytest.ini`, `go test`, …), and note **which layer each covers** (Playwright /
+     Cypress → UI/e2e; Vitest / Jest / Mocha → unit/component; supertest / integration runners → API;
+     DB-backed tests → data). Flag any layer this change touches that has **no** tooling — those criteria
+     will be unverifiable (→ draft). This is what lets `/auto-author-acceptance-tests` write in the
+     framework that *exists* (e.g. Vitest, not Jest) and `/auto-verify-build` run the *real* command,
+     instead of guessing.
    - constraints **specific to this change** that aren't already in `TICKET_CONTEXT` — read them
      out of the existing code; never assume the stack.
 
@@ -67,6 +75,9 @@ Second step of the feature path **when there's a ticket** (`auto-verify-ticket` 
 
    ## Similar Patterns in Codebase
    [The closest existing implementation(s) to copy, named with file + line anchors]
+
+   ## Test Tooling
+   [Frameworks present + run command + the layer each covers; flag any layer this change touches with NO tooling]
 
    ## Constraints
    [Only rules specific to THIS change and not already in TICKET_CONTEXT — reference it, don't repeat it]

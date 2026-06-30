@@ -64,7 +64,7 @@ the daily driver.
 |---|---|
 | `auto-dev-flow` | The unattended orchestrator — ticket → PR with no human in the loop; owns the build↔verify loop + budget |
 | `auto-verify-ticket` | reconcile an externally-authored ticket against the code (confabulation → comment on ticket, no PR) |
-| `auto-plan-brief` | feature recon — gather grounded context for `/plan` mode (never pauses; assumptions → Open Questions) |
+| `auto-plan-brief` | feature recon — grounded context for `/plan` mode + a **test-tooling inventory** (frameworks/commands per layer); never pauses |
 | `auto-author-acceptance-tests` | **(new)** author acceptance tests from the criteria, independent of the build, and **commit them** as the base |
 | `auto-implement-brief` | build the plan the lean way — reuse survey → minimal build; decide-and-flag, never edits the acceptance tests |
 | `auto-verify-build` | **(new)** the independent verifier — fresh subagent per pass, falsifies vs criteria + reviews the test diff → verdict |

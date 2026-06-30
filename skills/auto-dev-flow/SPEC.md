@@ -143,6 +143,35 @@ exists to replace. The builder and the (re-spawned) verifier form a loop:
 - **Deferred:** mutation testing (does a test fail when the code is mutated?) — the strongest defense
   against tautological tests, but expensive; not day-one.
 
+## Test adequacy — red before green
+
+Test *integrity* (above) asks "were the tests tampered with?"; test **adequacy** asks "are they worth
+running at all?" `/auto-verify-build` checks the code *passes* the acceptance tests — worthless if a
+test would pass anyway. `/auto-audit-tests` (fresh, independent — the author can't grade its own tests)
+closes that gap **before** the build, reusing commit-first: the tests are committed before the feature
+exists, so a genuine new-behaviour test must **fail at `base`**.
+
+It returns a **three-valued** per-test verdict, and the distinction *is* the product:
+- **adequate** — failed at base via a real **assertion failure** (code ran, assertion caught it). Proven.
+- **weak** — failed **only by error/absence** (missing symbol / testid / route). Red, but it proves the
+  test *references* something absent, not that its assertion is meaningful — the common UI case, so a
+  naive red/green audit rubber-stamps nearly everything. A `weak` test is a *softer* verified.
+- **inadequate** — **passed at base.** Vacuous; its criterion is **unverifiable** downstream (a vacuous
+  pass is not a pass), whatever it does post-build.
+
+Two deliberate calls:
+- **The auditor classifies new-vs-preservation itself**, not from an author label — a label is a gameable
+  escape hatch (mislabel a vacuous test "preservation" and it skips the red-check). Preservation criteria
+  are green at base by design and are covered by the regression suite, not a red-at-base test.
+- **Detect-and-flag, no strengthen loop (v1).** Auto-correcting "make it red" optimizes a gameable proxy
+  (a spurious assertion on a missing symbol manufactures a *weak* red) and is a speculative second loop
+  built before the first real run. Flag instead: `inadequate` → unverifiable → draft. Strengthening can
+  come later, grounded in real runs.
+
+**Necessary, not sufficient.** Red-before-green proves a test *depends on* the new behaviour; even
+assertion-red doesn't prove the assertion is *complete*. Mutation testing is the sufficient check, still
+deferred — so "audited for adequacy" means "can't be trivially vacuous," not "proven thorough."
+
 ## No-fly list — mechanism, checked twice
 
 A path/content denylist (auth, payments, secrets, migrations, deploy/install/network-mutating ops),

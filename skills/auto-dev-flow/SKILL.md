@@ -97,6 +97,12 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
      base, so any later builder edit to one surfaces in `git diff <base>` — this is what makes "satisfy,
      don't edit" enforceable, not aspirational. (Capture fails — unborn branch — → use the skill's hash
      fallback.)
+   - **Audit the tests for adequacy** — run **`/auto-audit-tests`** (fresh subagent) against `base` →
+     `.dev-flow/<task>/TEST_AUDIT.md`. Because the feature doesn't exist at `base`, a real new-behaviour
+     test must *fail* there; it judges each **adequate** (failed via a real assertion), **weak** (failed
+     only by error/absence), or **inadequate** (passed = vacuous). An **inadequate** test means its
+     criterion is **unverifiable** downstream — a vacuous test can't launder into "verified" even when it
+     passes post-build. Detect-and-flag only; it doesn't fix tests.
 
 7. **Build.** Build per the plan (`/auto-implement-brief` discipline) in logical increments,
    `/auto-commit` each clean increment right away with a proportional Decision Log. **Stay in scope.** The

@@ -21,7 +21,9 @@ accumulates the builder's state is just the self-grading this skill exists to re
    sha **recorded in `.dev-flow/<task>/ACCEPTANCE_TESTS.md`** (and also passed to you by the
    orchestrator) — you run fresh and cannot recompute it, so read it. The authored tests are *in* that
    base, so any builder edit to one surfaces in the diff. Also read the acceptance criteria
-   (`.dev-flow/<task>/TICKET_CONTEXT.md`) and the protected acceptance-test paths (same manifest).
+   (`.dev-flow/<task>/TICKET_CONTEXT.md`), the protected acceptance-test paths (same manifest), and the
+   **test-adequacy results** (`.dev-flow/<task>/TEST_AUDIT.md`) — a criterion whose test was judged
+   `inadequate` is **not** verifiable by that test, no matter what it does now.
 
 2. **Falsify against the criteria — using the harness for each criterion's layer.** Run the acceptance
    tests + the **full** project suite **using the repo's real commands** (from the Test Tooling
@@ -48,14 +50,17 @@ accumulates the builder's state is just the self-grading this skill exists to re
    verified | couldn't-verify | falsified   — <one-line reason>
 
    ## Criteria
-   - <criterion> → pass | fail | unverifiable   (+ evidence: test name / what was observed)
+   - <criterion> → pass | fail | unverifiable   (+ adequacy from TEST_AUDIT.md + evidence)
 
    ## Test integrity
    - tests added / changed / removed: <counts>
    - tamper breaches: <none | the specific weakened/vacuous/edited-acceptance findings>
    ```
-   Verdict rules:
-   - **verified** — every *testable* criterion passes AND no tamper breach.
+   **Factor adequacy first** (from `TEST_AUDIT.md`): a criterion whose test is `inadequate` does **not**
+   count as verified even if it now passes — a vacuous pass is not a pass → `unverifiable` for that
+   criterion. A `weak` test counts as a pass but is **flagged** (red-by-absence only). Only `adequate`
+   tests give a clean pass. Then the verdict rules:
+   - **verified** — every *testable* criterion passes on an **adequate** test AND no tamper breach.
    - **falsified** — any criterion fails, OR any tamper breach.
    - **couldn't-verify** — the **layer's harness can't run** (app / dev-server down, Playwright
      unavailable, DB or dependent service unreachable), or a criterion is unverifiable-by-nature

@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "auto-flow",
-      "description": "Unattended AI-assisted dev flow: ticket in, pull request out, no human in the loop. It is dev-flow with BOTH human gates swapped for automated approvers — decide-and-flag on ambiguities, an independent falsifying verifier inside a bounded build↔verify loop, and a PR whose body surfaces every decision so the human's MERGE is the only gate. It never merges; the PR is the asynchronous review gate. Bundles the auto-dev-flow orchestrator, vendored copies of the chain (auto-verify-ticket, auto-plan-brief, auto-implement-brief, auto-commit, auto-pr), and two auto-specific skills (auto-author-acceptance-tests, auto-verify-build) — fully self-contained, with no dependency on dev-flow-skills, so its underlying skills can drift freely to suit auto mode.",
+      "description": "Unattended AI-assisted dev flow: ticket in, pull request out, no human in the loop. It is dev-flow with BOTH human gates swapped for automated approvers — decide-and-flag on ambiguities, an independent falsifying verifier inside a bounded build↔verify loop, and a PR whose body surfaces every decision so the human's MERGE is the only gate. It never merges; the PR is the asynchronous review gate. Bundles the auto-dev-flow orchestrator, vendored copies of the chain (auto-verify-ticket, auto-plan-brief, auto-implement-brief, auto-commit, auto-pr), and three auto-specific skills (auto-author-acceptance-tests, auto-audit-tests, auto-verify-build) — fully self-contained, with no dependency on dev-flow-skills, so its underlying skills can drift freely to suit auto mode.",
       "source": "./",
       "strict": false,
       "skills": [
@@ -18,6 +18,7 @@
         "./skills/auto-verify-ticket",
         "./skills/auto-plan-brief",
         "./skills/auto-author-acceptance-tests",
+        "./skills/auto-audit-tests",
         "./skills/auto-implement-brief",
         "./skills/auto-verify-build",
         "./skills/auto-commit",

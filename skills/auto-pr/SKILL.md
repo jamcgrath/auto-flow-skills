@@ -34,6 +34,8 @@ rolls them up (see global CLAUDE.md).
    **Verdict:** verified | couldn't-verify | draft: couldn't satisfy <criterion>
    <from VERIFICATION.md — state plainly that it is LLM judgment in fresh context, not ground truth>
    **Test integrity:** <tests added / changed / removed; surface any tamper breach LOUDLY>
+   **Test adequacy:** <from TEST_AUDIT.md — N adequate / N weak / N inadequate; inadequate criteria are
+   unverifiable (a vacuous test passing ≠ verified), weak = red-by-absence only>
    **Assumptions made:** <N decisive forks — call it out as an under-specification signal if high>
 
    ## Summary

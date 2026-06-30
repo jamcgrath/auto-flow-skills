@@ -46,6 +46,7 @@ the daily driver.
          log each DECISIVE fork + the alternative rejected → DECISIONS.md
   → branch off default → persist PLAN.md
   → /auto-author-acceptance-tests → COMMITS the tests (= the build's base) → capture base
+  → /auto-audit-tests → red-before-green adequacy at base: adequate / weak / inadequate → TEST_AUDIT.md
   → build per plan (/auto-implement-brief; must SATISFY the acceptance tests, never edit them)
   ┌─ build↔verify loop (orchestrator owns budget: 3 build attempts) ─────────────┐
   │   /auto-verify-build — FRESH subagent per pass → falsify vs criteria + review │
@@ -66,6 +67,7 @@ the daily driver.
 | `auto-verify-ticket` | reconcile an externally-authored ticket against the code (confabulation → comment on ticket, no PR) |
 | `auto-plan-brief` | feature recon — grounded context for `/plan` mode + a **test-tooling inventory** (frameworks/commands per layer); never pauses |
 | `auto-author-acceptance-tests` | **(new)** author acceptance tests from the criteria, independent of the build, and **commit them** as the base |
+| `auto-audit-tests` | **(new)** audit those tests via red-before-green — adequate / weak / inadequate, so a vacuous test can't pass as "verified" |
 | `auto-implement-brief` | build the plan the lean way — reuse survey → minimal build; decide-and-flag, never edits the acceptance tests |
 | `auto-verify-build` | **(new)** the independent verifier — fresh subagent per pass, falsifies vs criteria + reviews the test diff → verdict |
 | `auto-commit` | commit with a proportional Decision Log |
@@ -93,6 +95,7 @@ auto-flow-skills/
   skills/auto-verify-ticket/SKILL.md
   skills/auto-plan-brief/SKILL.md
   skills/auto-author-acceptance-tests/SKILL.md
+  skills/auto-audit-tests/SKILL.md
   skills/auto-implement-brief/SKILL.md
   skills/auto-verify-build/SKILL.md
   skills/auto-commit/SKILL.md
@@ -113,7 +116,7 @@ Then `/auto-dev-flow <ticket>`. No other plugin is required — the chain is bun
 Symlink the skill folders into your user skills dir so edits in this repo are live immediately:
 
 ```sh
-for d in auto-dev-flow auto-verify-ticket auto-plan-brief auto-author-acceptance-tests auto-implement-brief auto-verify-build auto-commit auto-pr; do
+for d in auto-dev-flow auto-verify-ticket auto-plan-brief auto-author-acceptance-tests auto-audit-tests auto-implement-brief auto-verify-build auto-commit auto-pr; do
   ln -s "$PWD/skills/$d" ~/.claude/skills/"$d"
 done
 ```

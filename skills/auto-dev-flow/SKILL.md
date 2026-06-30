@@ -1,6 +1,6 @@
 ---
 name: auto-dev-flow
-description: Run the dev flow fully unattended — ticket in, pull request out, with no human in the loop. It is dev-flow with BOTH human gates swapped for automated approvers: it resolves ambiguities itself (decide-and-flag), verifies the result with an independent falsifying agent inside a bounded build↔verify loop, and opens a PR whose body surfaces every decision it made — because the human's MERGE decision is the only gate. It never merges; the PR is the asynchronous review gate. It refuses (commenting back on the ticket, opening no PR) only on a confabulation, a no-fly path (auth / payments / secrets / migrations), or a runaway. Phase 1 runs locally for tuning but behaves identically to an unattended cloud run — fully non-interactive, it never asks a question. See SPEC.md (same dir) for the design rationale; it ships its own vendored chain (auto-verify-ticket, auto-plan-brief, auto-implement-brief, auto-commit, auto-pr), modeled on dev-flow but free to drift from it. Use when the user says "auto dev flow", "/auto-dev-flow <ticket>", or wants a ticket built to a PR without supervision.
+description: Run the dev flow fully unattended — ticket in, pull request out, with no human in the loop. It is dev-flow with BOTH human gates swapped for automated approvers: it resolves ambiguities itself (decide-and-flag), verifies the result with an independent falsifying agent inside a bounded build↔verify loop, and opens a PR whose body surfaces every decision it made — because the human's MERGE decision is the only gate. It never merges; the PR is the asynchronous review gate. It refuses (reporting back, opening no PR) only on a confabulation, a not-ready working tree, a ticket that inherently needs an irreversible action (a prod deploy/migration), or a runaway — any topic is otherwise fair game since the PR (never a deploy) is the gate, and it exits cleanly when the work is already done. Phase 1 runs locally for tuning but behaves identically to an unattended cloud run — fully non-interactive, it never asks a question. See SPEC.md (same dir) for the design rationale; it ships its own vendored chain (auto-verify-ticket, auto-plan-brief, auto-implement-brief, auto-commit, auto-pr), modeled on dev-flow but free to drift from it. Use when the user says "auto dev flow", "/auto-dev-flow <ticket>", or wants a ticket built to a PR without supervision.
 ---
 
 # auto-dev-flow
@@ -23,7 +23,7 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
 
 ```
 /auto-dev-flow <ticket>            (NON-INTERACTIVE — never asks a question, local or cloud)
-  → intake circuit-breakers: no-fly path? runaway? → if tripped: comment on ticket, open NO pr
+  → intake + readiness: clean tree? inherently-irreversible-action ticket? runaway? → tripped: report, NO pr
   → [auto-verify-ticket]   confabulation → comment on ticket, open NO pr · else flags flow forward
   → auto-plan-brief → /plan (internal, NO gate)
        → resolve every fork to the simplest ticket-grounded option;
@@ -37,7 +37,7 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
   │     verified      → exit loop                                                  │
   │     falsified     → hand named failures back to builder as a FIX task (budget) │
   │     couldn't-verify / budget exhausted → exit loop (→ draft PR)                │
-  │   diff-time no-fly breach → abort before commit, comment on ticket            │
+  │   diff-time action-guard: irreversible action / secret → abort, report        │
   └──────────────────────────────────────────────────────────────────────────────┘
   → /code-review (effort ∝ diff)
   → /auto-pr  — reads DECISIONS.md + VERIFICATION.md; body LEADS with ⚠️ decisions +
@@ -52,22 +52,37 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
    loop, and this holds even in Phase 1 local runs (see Guards). If nothing was passed, fail closed:
    comment that no ticket was supplied; do not invent one.
 
-2. **Intake circuit-breakers (thin — not competence prediction).** Two cheap refusals only; everything
-   else is *attempted* and judged by the human at the PR (that is the competence boundary — see
-   `SPEC.md`):
-   - **No-fly path** — the ticket names a denylist area (auth, permissions, secrets, payments,
-     migrations, deploy / install / network-mutating ops). → **Refuse: comment on the ticket, open no
-     PR.** Build/verify side effects aren't undone by closing a PR, so this area never gets attempted
-     unattended.
-   - **Runaway guard** — set an iteration/time ceiling so a pathological run can't grind forever.
-   Fork *count* is **not** a refusal — a ticket needing many assumptions still gets a PR; the count is
-   surfaced to the reviewer as an under-specification signal (step 9).
+2. **Intake circuit-breakers + readiness (thin — not competence prediction).** Cheap pre-checks only;
+   everything else is *attempted* and judged by the human at the PR (that is the competence boundary —
+   see `SPEC.md`):
+   - **Readiness — clean tree, right base.** `git status`. If the working tree has **uncommitted
+     changes**, or you're on an **unrelated branch** (not the default, not this task's own branch),
+     **stop and report** — an unattended run can't isolate the task on a dirty/unrelated base, and
+     pre-existing changes would entangle the commit. (The build always branches off the **default** —
+     step 6 — it never reuses whatever branch happens to be checked out.)
+   - **No-fly is an ACTION guard, not a topic ban.** Branch isolation + the merge gate make the produced
+     *code* safe, so **any topic may be built** (auth, infra, payments — the PR, never a deploy, is the
+     gate). What's forbidden is *executing*, during build/verify, an action whose effects **outlive a
+     closed PR**: a deploy/publish, a migration against a **shared/real** DB, a network-mutating call to
+     a real external service (payments, email, prod data writes), or a global install. That bites at
+     build/verify time (step 8) — the only **intake** refusal is a ticket that *inherently* can't be
+     delivered without such an action (e.g. "run this migration on prod"). And never commit a **secret**
+     into the branch (a pushed branch exposes it even unmerged).
+   - **Runaway guard** — an iteration/time ceiling so a pathological run can't grind forever.
+   Confabulation (step 3) plus the above are the only refusals; **fork count** is surfaced (step 9),
+   never a refusal. Refuse by **reporting** it and opening no PR — comment on the ticket *when Jira write
+   scope is available*; tokens are often **read-only**, so surfacing the report is the fallback.
 
 3. **auto-verify-ticket (if an external item).** Run `/auto-verify-ticket` → `.dev-flow/<task>/TICKET_CONTEXT.md`.
    It flags drift and flows on; the one stop is a **confabulation** (a ticket premised on something the
-   repo isn't). On the unattended path a confabulation → **comment the evidence on the ticket and open
-   no PR** (instead of dev-flow's human override prompt). Otherwise its flags ride forward as open
-   forks for step 5.
+   repo isn't) → **report the evidence (comment on the ticket if write scope, else surface it) and open
+   no PR** (instead of dev-flow's human override prompt). Otherwise its flags ride forward as open forks
+   for step 5.
+   - **Already-done terminal.** If verify-ticket (or recon/plan) finds the ticket's criteria are
+     **already satisfied in mainline** — there is nothing to build — **terminate honestly: report
+     "already implemented" with the evidence, open NO PR.** Don't manufacture a PR from marginal residual
+     to justify a run, and don't treat genuinely-optional residual the ticket marks "if available" as a
+     reason to build. Already-built is a *valid outcome*, not a failure.
 
 4. **auto-plan-brief → plan (internal, no gate).** Run `/auto-plan-brief` → `.dev-flow/<task>/PLAN_BRIEF.md`
    (its recon includes a **test-tooling inventory** — the frameworks + run commands
@@ -123,9 +138,11 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
    - **couldn't-verify** (app won't start / Playwright down / subjective criterion) **or budget
      exhausted** → exit; the PR becomes a **draft** (decided by `/auto-pr` from the verdict, step 9).
    Never loop forever; never emit a confident "ready" PR the verifier didn't confirm.
-   **Diff-time no-fly check:** before each commit and before any side-effecting verify command, re-check
-   the no-fly denylist against everything changed since `base` — a breach → **abort before committing**,
-   comment on the ticket.
+   **Diff-time action-guard:** before each commit, and **before any side-effecting verify/build command**
+   (deploy/publish, a migration against a shared/real DB, a network-mutating prod call, a global install),
+   **stop** — those effects outlive a closed PR. Contained local verification (unit / integration / local
+   Playwright against a dev server) is fine — proceed. A **secret** about to be committed → stop. Breach →
+   abort and report (comment on the ticket if write scope).
 
 9. **code-review → PR (the decision artifact).** Run `/code-review` at effort proportional to the diff;
    `/auto-commit` any fixes. Then **`/auto-pr`** — it reads `DECISIONS.md` + `VERIFICATION.md` and owns
@@ -151,9 +168,12 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
   tests. Rely on separation of powers (builder ≠ verifier ≠ acceptance-test author), mechanical tamper
   tripwires in **both** directions, and loud surfacing — not on good intent. (See `SPEC.md`; mutation
   testing is the deferred strong defense.)
-- **Thin circuit-breakers, no competence prediction.** Refuse only on a no-fly path, a confabulation,
-  or a runaway — and refuse by **commenting on the ticket and opening no PR**, never by half-building.
-  Everything else is attempted; the human's merge decision is the competence boundary.
+- **Thin circuit-breakers, no competence prediction.** Refuse only on a confabulation, a not-ready tree,
+  an inherently-irreversible-action ticket, or a runaway — by **reporting it** (commenting on the ticket
+  when write scope allows) and opening no PR, never by half-building. **No-fly is an action guard
+  enforced at build/verify (step 8), not a topic ban** — any topic may be built because the PR, not a
+  deploy, is the gate. **Already-built → report it, don't build a pointless PR.** Everything else is
+  attempted; the human's merge decision is the competence boundary.
 - **Fail closed.** A missing tool (Rovo / `gh` / browser / dev server), an unreachable or
   ambiguous-answering verifier, or an un-capturable build base → **comment on the ticket and stop**;
   never fail open to a confident PR. (Phase 2: Jira via Rovo may not auth headless — prefer GitHub

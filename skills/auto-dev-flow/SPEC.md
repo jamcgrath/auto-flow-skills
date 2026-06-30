@@ -81,9 +81,11 @@ onto one component, so the more autonomy, the more verification must carry.
    strictly more accurate than predicting from an abstract ticket — and a predictive gate wrongly
    refuses good tickets (false negatives). The **PR-as-probe** insight clinched it: sometimes building
    the thing is how you *discover* the ticket was wrong, and that's cheap discovery, not waste. So the
-   skill **always produces a PR** except for three hard refusals: a **confabulation** (caught by
-   auto-verify-ticket), a **no-fly path**, or a **runaway**. Fork *count* is surfaced to the reviewer as an
-   under-specification signal — never used to refuse.
+   skill **always produces a PR** except for a few hard refusals: a **confabulation** (caught by
+   auto-verify-ticket), a **not-ready tree**, a ticket that **inherently needs an irreversible action**,
+   or a **runaway** — and it exits without a PR when the work is **already done** (the no-fly guard is
+   otherwise an *action* check at build/verify, not a topic ban — see Guardrails below). Fork *count* is
+   surfaced to the reviewer as an under-specification signal — never used to refuse.
 
 3. **Honest, legible PR.** The reviewer's decision is only as good as what it's based on. So: few,
    ranked, decision-relevant ⚠️ flags (alarm fatigue → rubber-stamping is the real enemy); the
@@ -172,14 +174,40 @@ Two deliberate calls:
 assertion-red doesn't prove the assertion is *complete*. Mutation testing is the sufficient check, still
 deferred — so "audited for adequacy" means "can't be trivially vacuous," not "proven thorough."
 
-## No-fly list — mechanism, checked twice
+## Guardrails — refined by the first real run (NSS2-2367)
 
-A path/content denylist (auth, payments, secrets, migrations, deploy/install/network-mutating ops),
-checked at **two** points because build/verify side effects aren't undone by closing a PR:
+The first live dry-run — an already-implemented Cloudflare-edge ticket, run on a dirty unrelated branch
+with a read-only Jira token — reshaped the guardrails. Four corrections:
 
-- **Intake** — the ticket names a no-fly area → refuse, comment on the ticket, open no PR.
-- **Diff-time** — the build wandered into a denylist path → **abort before committing** (and before any
-  side-effecting verify command), comment on the ticket.
+**No-fly is an *action* guard, not a *topic* ban.** The original denylist refused whole *topics* at
+intake (auth / payments / infra / migrations …). But branch isolation + the merge gate make the produced
+*code* safe — nothing ships until a human merges — so refusing a *topic* is over-cautious (it declines to
+even draft a perfectly reviewable PR). The irreducible danger is an **action taken during build/verify
+whose effects outlive a closed PR**: a deploy/publish, a migration against a shared/real DB, a
+network-mutating call to a real external service (payments, email, prod writes), a global install, or a
+**secret committed into the branch** (a pushed branch exposes it even unmerged). So **any topic may be
+built; the guard fires on the action**, enforced at build/verify (the diff-time action-guard), not as a
+topic refusal at intake. The lone *intake* refusal is a ticket that **inherently** can't be delivered
+without such an action ("run this migration on prod"). *Rejected — keep the topic denylist:* it
+conflates "writing infra code (a reversible PR)" with "deploying infra (irreversible)"; the danger was
+always the latter.
+
+**Readiness — a clean tree on the right base.** Intake now runs `git status`: an uncommitted/dirty tree
+or an unrelated checked-out branch → **stop and report**. (The first run sat on
+`fix/remove-floating-subscribe-button` with pending edits; without this the flow would have entangled the
+ticket's work with an unrelated branch.) The build always branches off the **default**, never reuses
+whatever is checked out. dev-flow had a readiness scan; auto-dev-flow had dropped it.
+
+**Already-done is a valid terminal.** verify-ticket can find the criteria already satisfied in mainline
+(NSS2-2367's core shipped under prior tickets). The flow is built to *always* produce a PR, but "nothing
+to build" is legitimate: **report "already implemented" with evidence, open no PR** — never manufacture a
+PR from marginal/optional residual to justify a run. This is verify-ticket earning its place: without it
+an unattended run builds a *duplicate* of existing functionality.
+
+**Refusals report; they don't always comment.** Each refusal/terminal wants to "comment on the ticket",
+but Jira tokens are frequently **read-only** (the first run's Rovo scope was `read:jira-work`). The
+contract is *report the evidence*; comment on the ticket only when write scope exists, else surface it.
+Write scope is a Phase-2 provisioning item.
 
 ## Phase boundary
 

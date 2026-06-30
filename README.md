@@ -39,7 +39,7 @@ the daily driver.
 
 ```
 /auto-dev-flow <ticket>            (NON-INTERACTIVE — never asks a question, local or cloud)
-  → intake circuit-breakers: no-fly path? runaway? → if tripped: comment on ticket, open NO pr
+  → intake + readiness: clean tree? inherently-irreversible-action ticket? runaway? → tripped: report, NO pr
   → [auto-verify-ticket]   confabulation → comment on ticket, open NO pr · else flags flow forward
   → auto-plan-brief → /plan (internal, NO gate)
        → resolve every fork to the simplest ticket-grounded option;
@@ -128,11 +128,14 @@ done
 - **It is fully non-interactive — even locally.** No questions, no pauses, in Phase 1 *or* Phase 2.
   Local invocation changes only the trigger, never the behaviour — otherwise you're tuning a different
   skill than the one that ships.
-- **It refuses on three things only**, by commenting on the ticket and opening **no** PR: a **no-fly
-  path** (auth / permissions / secrets / payments / migrations / deploy-install-network ops), a
-  **confabulation** (caught by auto-verify-ticket), or a **runaway**. Everything else is attempted —
-  the human's merge decision is the competence boundary, not an up-front eligibility guess. **Confirm
-  the no-fly list against your own risk surface before use** (`skills/auto-dev-flow/SKILL.md`, step 2).
+- **It refuses sparingly** — by *reporting* it (commenting on the ticket when Jira write scope exists,
+  else surfacing) and opening **no** PR — on: a **confabulation**, a **not-ready working tree** (dirty /
+  unrelated branch), a ticket that **inherently needs an irreversible action** (a prod deploy/migration),
+  or a **runaway**. **No-fly is an *action* guard, not a topic ban** — any topic may be built because the
+  PR (never a deploy) is the gate; the guard fires at build/verify on actions whose effects outlive a
+  closed PR (deploy, shared-DB migration, prod-mutating call, a committed secret). And **already-built is
+  a valid terminal** — the flow reports "already implemented", it doesn't fabricate a PR. Everything else
+  is attempted; the human's merge decision is the competence boundary.
 - **Honest over confident.** A `couldn't-verify` or budget-exhausted result is a **draft** PR that says
   so — never dressed up as ready. The worst failure is a PR that falsely claims "verified," because it
   corrupts the merge decision at its source.

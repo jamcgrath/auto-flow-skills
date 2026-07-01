@@ -36,13 +36,17 @@ and it **does not fix** them (detect-and-flag only).
      assertion caught it. The only *proven* test.
    - **weak** — failed **only by error / absence** (missing `data-testid` / symbol / route / import). Red,
      but it proves the test *references* something absent, not that its assertion is meaningful. (For UI
-     tests this is the common case — a missing testid throws before any assertion runs.)
+     tests this is the common case — a missing testid throws before any assertion runs.) When you report a
+     `weak`, name which kind: **structural** — the tested symbol is net-new, so *no* test could be
+     assertion-adequate at `base` (not an author error); or **manufactured** — an existence guard
+     (`expect(mod).not.toBeNull()`) short-circuits an assertion that otherwise *could* have fired. The
+     verdict is `weak` either way; the label tells the flow whether the author erred or it was just hard.
    - **inadequate** — **passed at `base`.** Vacuous — it doesn't exercise the new behaviour at all.
 
 4. **Write `.dev-flow/<task>/TEST_AUDIT.md`** — the per-criterion result the rest of the flow reads:
    ```
    ## Per criterion
-   - <criterion> · new · test <name> · adequate | weak | inadequate — <evidence>
+   - <criterion> · new · test <name> · adequate | weak (structural|manufactured) | inadequate — <evidence>
    - <criterion> · preserved · regression-covered (no red-at-base test expected)
 
    ## Summary

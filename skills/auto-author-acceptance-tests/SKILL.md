@@ -17,15 +17,23 @@ tests** → build → /auto-verify-build`. It writes tests, commits them, and re
 ## Steps
 
 1. **Read the criteria + the repo's test tooling, then classify each by layer.** Acceptance criteria
-   from `.dev-flow/<task>/TICKET_CONTEXT.md`; the intended surface from `.dev-flow/<task>/PLAN.md`; and
-   the **Test Tooling inventory** from `.dev-flow/<task>/PLAN_BRIEF.md` (the frameworks that actually
-   exist + their run commands). auto-flow is **general-purpose** — for *each* criterion decide where the
-   behaviour lives, because that picks the test type:
+   from `.dev-flow/<task>/TICKET_CONTEXT.md`; the intended surface from `.dev-flow/<task>/PLAN.md` (read
+   both its **Acceptance-test surface** *and* its build steps — they can diverge, and the build steps name
+   surfaces the suggested test list may under-name); the **decide-and-flag decisions** from
+   `.dev-flow/<task>/DECISIONS.md` (each resolved fork — a chosen label, a second renderer — is a surface
+   a test must pin); and the **Test Tooling inventory** from `.dev-flow/<task>/PLAN_BRIEF.md` (the
+   frameworks that actually exist + their run commands). auto-flow is **general-purpose** — for *each*
+   criterion decide where the behaviour lives, because that picks the test type:
    - **UI / user flow** → Playwright black-box (key on user-visible behaviour + stable `data-testid`s)
    - **Pure logic / function** → unit test on inputs→outputs, edge cases, error paths
    - **API / service** → integration / contract test hitting the endpoint or calling the service
    - **Data / schema** → assertions against a seeded DB (+ migration up→down)
    - **CLI / library** → invoke and assert on output / exit code
+
+   **Decompose each criterion into every surface it names, and cover each.** A criterion spanning
+   multiple observable instances — *mobile **and** desktop*, more than one renderer / page, each variant —
+   needs a test per instance, or that instance recorded `unverifiable` with a reason; one test for a
+   two-surface criterion silently drops half of it.
 
    `data-testid`s apply **only** to the UI layer — don't force a backend criterion through a UI mould.
    Author each test in the framework the inventory says the repo **actually uses** (e.g. Vitest, not
@@ -40,6 +48,20 @@ tests** → build → /auto-verify-build`. It writes tests, commits them, and re
    endpoint + request/response shape; data → query results. Be **falsify-minded** — include the edge and
    error cases, not just the happy path. The tests reference contracts that don't exist yet — that's the
    bar: **the tests define the contract, the builder implements to it.**
+
+   **Write so the red-before-green failure is a real assertion, not mere absence.** A fresh auditor
+   (`/auto-audit-tests`) grades each test on *how* it fails at `base`: an **assertion** failure (the code
+   ran and produced a wrong value) is *adequate*; failing only because a symbol / route / `data-testid` is
+   **absent** is *weak*. A brand-new pure symbol can **only** fail by absence — its red is *structurally*
+   weak no matter what — so don't dress that absence up with a bolted-on `expect(mod).not.toBeNull()`: it
+   manufactures a fake-adequate red and, at green, swallows real import errors. Prefer a plain import (an
+   honest weak red is clearer), or anchor the assertion on a seam that **already exists** at `base` (the
+   real regenerated config, an existing component's output) so the missing behaviour trips a genuine
+   assertion. Author *for* a real red; never self-grade it — the auditor owns that verdict.
+
+   **For a preservation criterion** ("X still works after the change"), pin the **whole** prior surface —
+   snapshot the full field set / config subtree, not one representative field — or "unaffected" is
+   asserted far more loosely than it reads.
 
 3. **Mark unverifiable criteria honestly.** A subjective / aesthetic criterion that can't be expressed
    as an executable assertion → record it as **unverifiable**. Do **not** fake a tautological test
@@ -59,7 +81,9 @@ tests** → build → /auto-verify-build`. It writes tests, commits them, and re
    in the manifest so edits are still detectable; commit-first is preferred.)
 
 5. **Write the manifest** `.dev-flow/<task>/ACCEPTANCE_TESTS.md` — the **protected set**
-   `/auto-verify-build` and the builder both read:
+   `/auto-verify-build` and the builder both read. Record your honest *expectation* per criterion, never
+   an adequacy **verdict** — grading your own red is the self-grading `/auto-audit-tests` exists to
+   replace; leave the verdict to it.
    ```
    ## Base commit
    <sha of the "Add acceptance tests" commit — /auto-verify-build diffs against this>
@@ -68,7 +92,14 @@ tests** → build → /auto-verify-build`. It writes tests, commits them, and re
    - <path>            (+ content hash, only on the can't-commit fallback)
 
    ## Criterion → test
-   - <criterion> → <test name / file>  ·  or:  unverifiable — <why>
+   - <criterion> → <test name / file>  ·  expected red-at-base: adequate | weak (<why>)  ·  or: unverifiable — <why>
+     (expected-* is a *hypothesis* for /auto-audit-tests to confirm — never a verdict)
+
+   ## Residual gaps (what a passing test still does NOT prove)
+   - <e.g. helper output asserted; its wiring into the rendered DOM is not — no jsdom harness>
+
+   ## Side effects (tests that write / regenerate outside their own package)
+   - <e.g. the config spec's beforeAll regenerates workers/src/config/generated/**>
 
    ## Contracts the builder must expose (UI data-testids / function signatures / endpoints)
    - <contract> — <what it is>
@@ -78,6 +109,9 @@ tests** → build → /auto-verify-build`. It writes tests, commits them, and re
 - **Independent of the implementation; authored once, here, before the build.** The point is a *fixed*
   bar — never re-author or relax tests later to match what got built.
 - **Don't fake coverage.** A criterion you can't test executably is `unverifiable`, not a tautology.
+- **Don't manufacture an adequate-looking red, and don't grade your own.** A bolted-on existence assertion
+  on a missing symbol is still red-by-absence; a net-new pure symbol is *structurally* weak. Author for a
+  genuine assertion — the fresh auditor decides adequacy, never you.
 - **Commit-first is the integrity mechanism.** Skipping the commit (without the hash fallback) silently
   disables the acceptance-test tamper check downstream.
 - **Fail closed.** If the criteria are too thin to derive any test, record them all as `unverifiable`

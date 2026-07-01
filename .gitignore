@@ -18,3 +18,6 @@
 
 # Flow scratch — the skills write context files under .dev-flow/<task>/; never commit them
 .dev-flow/
+
+# Local docs / generated overviews — kept out of the repo
+docs/

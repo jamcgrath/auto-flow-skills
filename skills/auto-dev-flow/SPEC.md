@@ -130,9 +130,14 @@ let them live only in a fragile in-context summary.
 The design's answer is not to *control* compaction but to be *robust* to it: **every fact the flow depends
 on across a phase boundary lives in `.dev-flow/<task>/`, not in context.** `base` is backstopped in
 `ACCEPTANCE_TESTS.md`, decisions in `DECISIONS.md`, the plan in `PLAN.md`, the verdict in
-`VERIFICATION.md`, the protected test set in `ACCEPTANCE_TESTS.md`. Re-read them; never recall them. Then an
-auto-compaction at any point is a non-event — the *same* property that already lets a **fresh subagent**
-(verify, audit) reconstruct its inputs from disk with zero builder context. Compaction-safety and
+`VERIFICATION.md`, the protected test set in `ACCEPTANCE_TESTS.md`. Re-reading is a **fallback, not a
+routine**: pull a specific fact from disk when it isn't reliably in context after a summarization — never
+reload whole artifacts on a schedule. A blanket re-read-every-phase discipline is *self-defeating*: each
+re-read adds tokens and makes compaction fire sooner, feeding the very pressure it's meant to survive (and
+there's no dedup — the same file read twice is two copies in the history). The orchestrator's re-reads stay
+cheap and rare because the large artifacts are already reloaded *for free* by the **fresh subagents**
+(verify, audit) that reconstruct their inputs from disk in isolated context. So an auto-compaction at any
+point is a non-event without the orchestrator proactively reloading anything. Compaction-safety and
 verifier-independence are the one discipline seen from two angles: state that survives a wiped context also
 survives a summarized one.
 

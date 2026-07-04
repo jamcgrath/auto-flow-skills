@@ -208,10 +208,14 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
   mid-run (the harness auto-compacts long conversations; the build↔verify loop, with `/auto-implement-brief`
   running inline across up to 3 attempts, is the main growth driver), and summarization is lossy. So every
   value the flow depends on **across a phase boundary** — `base` rev, the protected acceptance-test set,
-  open decisive forks, the latest verdict — must be written to `.dev-flow/<task>/` *before* it's needed
-  downstream and **re-read there, not recalled**. This is already the discipline (`base` backstopped in
-  `ACCEPTANCE_TESTS.md`, decisions in `DECISIONS.md`, plan in `PLAN.md`, verdict in `VERIFICATION.md`) —
-  hold to it so an auto-compaction is a non-event. **Do not drive `/compact` yourself:** it's a lossy
+  open decisive forks, the latest verdict — is written to `.dev-flow/<task>/` *before* it's needed (`base`
+  backstopped in `ACCEPTANCE_TESTS.md`, decisions in `DECISIONS.md`, plan in `PLAN.md`, verdict in
+  `VERIFICATION.md`). **Re-read is a fallback, not a routine:** when you need one of those facts and it
+  isn't reliably in context (e.g. after a summarization), re-read *that specific value* from the last saved
+  `.dev-flow/<task>/` artifact — don't proactively reload whole files at every step. Blanket re-reads add
+  context and make compaction fire *more* often, defeating the purpose; and the fresh verify/audit subagents
+  already re-read the large artifacts in isolated context, so the orchestrator never re-reads those. **Do
+  not drive `/compact` yourself:** it's a lossy
   summary of exactly the state a false `verified` would launder through, and the file-state discipline makes
   it unnecessary. If context pressure ever bites, the fix is *more isolation* (spawn the build as a subagent,
   like verify/audit) — not compaction. See `SPEC.md` → *Compaction-safety*.

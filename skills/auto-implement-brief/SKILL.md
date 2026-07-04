@@ -34,13 +34,19 @@ Don't skip straight to coding.
 4. **Implement minimally, item by item.** Smallest change that satisfies each item; reuse what
    the plan committed to. No drive-by refactors, extra flags, or redundant deriveds. Stay in scope.
 
-5. **Verify behaviour, not just compilation.** Run the project's lint + typecheck. Verify each item
-   **at the layer it lives** — a real browser (Playwright/Chrome) for UI, the unit/integration tests for
-   logic/API, a seeded DB for data — and report what you actually observed against the acceptance items.
-   This is your **own** check — the *trusted* verification is
-   `/auto-verify-build` (independent, fresh context). You must make the **acceptance tests** (authored
-   before the build by `/auto-author-acceptance-tests`) pass by **changing the code**, never by editing
-   the tests — an edit to a protected acceptance test is a flagged breach.
+5. **Pre-flight the acceptance tests — don't re-verify the feature.** Run the project's lint + typecheck,
+   then run the **committed acceptance tests** (authored before the build by `/auto-author-acceptance-tests`)
+   at whatever layer they live, and stop there. You must make them pass by **changing the code**, never by
+   editing the tests — an edit to a protected acceptance test is a flagged breach. This is a **pre-flight,
+   not a verdict**: running the tests you were handed is the contract, and catching a contract failure here
+   is far cheaper than spending a whole `/auto-verify-build` pass on it — that gate is the budget-limited
+   safety check, not your test-runner-of-first-resort. **Don't go beyond the committed tests** — no
+   exploratory "does the whole feature look right" poking, no extra happy-path smoke, no browser walkthrough.
+   That adversarial, at-the-layer verification is `/auto-verify-build`'s job (independent, fresh context);
+   redoing it here only burns the orchestrator's context and is exactly the self-assessment the flow's
+   separation of powers discounts to zero. (Consequence, accepted: you no longer eyeball criteria beyond the
+   committed tests — including any the audit flagged weak/inadequate — but that signal was untrusted anyway
+   and rides to the human at the merge gate.)
 
 6. **Report, then commit.** Summarise each brief item → done / blocked, noting what was reused
    vs newly added. Confirm git state (`git status`), then `/auto-commit` each logical increment.

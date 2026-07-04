@@ -118,6 +118,35 @@ exists to replace. The builder and the (re-spawned) verifier form a loop:
 - Verdict → PR state: `verified` → ready · `couldn't-verify` → draft (honest) · exhausted-`falsified`
   → draft + flag.
 
+## Compaction-safety — state on disk, not in context
+
+The orchestrator runs one long conversation, and the **build↔verify loop is its main context-growth
+driver**: `/auto-implement-brief` runs inline, so up to 3 attempts accumulate its file reads, edits, and
+tool output. Long conversations get **summarized** (the harness auto-compacts), and summarization is
+**lossy** — it can silently drop the exact `base` rev, an acceptance-test path, a decisive fork, or a
+tamper signal. Those are precisely the facts a false `verified` would launder through, so the flow can't
+let them live only in a fragile in-context summary.
+
+The design's answer is not to *control* compaction but to be *robust* to it: **every fact the flow depends
+on across a phase boundary lives in `.dev-flow/<task>/`, not in context.** `base` is backstopped in
+`ACCEPTANCE_TESTS.md`, decisions in `DECISIONS.md`, the plan in `PLAN.md`, the verdict in
+`VERIFICATION.md`, the protected test set in `ACCEPTANCE_TESTS.md`. Re-read them; never recall them. Then an
+auto-compaction at any point is a non-event — the *same* property that already lets a **fresh subagent**
+(verify, audit) reconstruct its inputs from disk with zero builder context. Compaction-safety and
+verifier-independence are the one discipline seen from two angles: state that survives a wiped context also
+survives a summarized one.
+
+- *Rejected — drive `/compact` at loop boundaries:* it's the lossy version of what the file-state discipline
+  already does losslessly, and it summarizes exactly the state (base rev, test paths, tamper signals) the
+  flow can't afford to lose. Auto-compaction already covers "out of room"; a manually-triggered pass adds
+  risk, not headroom.
+- *Rejected — hold the build's tool output in the orchestrator and lean on compaction to shed it:* if
+  context pressure ever bites, the on-brand fix is **more isolation, not compaction** — spawn the build as a
+  subagent (as verify and audit already are), so its tool noise never lands in the orchestrator and it
+  returns a compact result plus disk state. Lossless where compaction is lossy. *Deferred:* the build runs
+  inline today; isolating it is the lever to pull if the loop proves context-hungry in Phase 2 (cloud, where
+  runs are longest), not a day-one change.
+
 ## Test integrity — detail
 
 - **Acceptance tests authored separately and after the plan.** A dedicated step writes them from the

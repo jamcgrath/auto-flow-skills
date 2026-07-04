@@ -204,3 +204,14 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
 - **`.dev-flow/<task>/` stays git-ignored scratch.** Visibility comes from *promoting* decisions to
   the PR + a comment on the ticket (and, in Phase 2, a structured emission for the learning loop) — not
   from committing the scratchpad.
+- **Compaction-safe by construction — never rely on a fact being in-context.** Context may be summarized
+  mid-run (the harness auto-compacts long conversations; the build↔verify loop, with `/auto-implement-brief`
+  running inline across up to 3 attempts, is the main growth driver), and summarization is lossy. So every
+  value the flow depends on **across a phase boundary** — `base` rev, the protected acceptance-test set,
+  open decisive forks, the latest verdict — must be written to `.dev-flow/<task>/` *before* it's needed
+  downstream and **re-read there, not recalled**. This is already the discipline (`base` backstopped in
+  `ACCEPTANCE_TESTS.md`, decisions in `DECISIONS.md`, plan in `PLAN.md`, verdict in `VERIFICATION.md`) —
+  hold to it so an auto-compaction is a non-event. **Do not drive `/compact` yourself:** it's a lossy
+  summary of exactly the state a false `verified` would launder through, and the file-state discipline makes
+  it unnecessary. If context pressure ever bites, the fix is *more isolation* (spawn the build as a subagent,
+  like verify/audit) — not compaction. See `SPEC.md` → *Compaction-safety*.

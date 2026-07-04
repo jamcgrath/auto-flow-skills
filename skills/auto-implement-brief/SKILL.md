@@ -1,6 +1,6 @@
 ---
 name: auto-implement-brief
-description: Auto-flow (unattended) variant of implement-brief, invoked by /auto-dev-flow — the autonomous twin of dev-flow's implement-brief, free to drift from it. Implement a feature brief or MVP spec the lean way — survey existing code first, propose a reuse plan, then build minimally and verify in the browser before committing. Primarily invoked by /auto-dev-flow; the unattended counterpart of dev-flow's implement-brief. Front-loads a reuse survey to prevent over-engineering (the wrapper-instead-of-an-existing-prop class of mistake).
+description: Auto-flow (unattended) variant of implement-brief, invoked by /auto-dev-flow — the autonomous twin of dev-flow's implement-brief, free to drift from it. Implement a feature brief or MVP spec the lean way — survey existing code first, propose a reuse plan, then build minimally and verify at the change's layer (browser for UI, tests/DB otherwise) before committing. Primarily invoked by /auto-dev-flow; the unattended counterpart of dev-flow's implement-brief. Front-loads a reuse survey to prevent over-engineering (the wrapper-instead-of-an-existing-prop class of mistake).
 ---
 
 # auto-implement-brief

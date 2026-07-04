@@ -39,7 +39,7 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
   │     couldn't-verify / budget exhausted → exit loop (→ draft PR)                │
   │   diff-time action-guard: irreversible action / secret → abort, report        │
   └──────────────────────────────────────────────────────────────────────────────┘
-  → /code-review (effort ∝ diff)
+  → /code-review (medium by default; ↑ to high only for complex multi-file logic)
   → /auto-pr  — reads DECISIONS.md + VERIFICATION.md; body LEADS with ⚠️ decisions +
                 verdict + test-integrity; opens READY only if verified, else DRAFT
   → STOP. Never merges. Merge = the (async) human gate.
@@ -112,7 +112,8 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
      base, so any later builder edit to one surfaces in `git diff <base>` — this is what makes "satisfy,
      don't edit" enforceable, not aspirational. (Capture fails — unborn branch — → use the skill's hash
      fallback.)
-   - **Audit the tests for adequacy** — run **`/auto-audit-tests`** (fresh subagent) against `base` →
+   - **Audit the tests for adequacy** — run **`/auto-audit-tests`** (fresh subagent, model ∝ the change's
+     complexity — a lighter tier for a small, simple test set) against `base` →
      `.dev-flow/<task>/TEST_AUDIT.md`. Because the feature doesn't exist at `base`, a real new-behaviour
      test must *fail* there; it judges each **adequate** (failed via a real assertion), **weak** (failed
      only by error/absence), or **inadequate** (passed = vacuous). An **inadequate** test means its
@@ -125,8 +126,9 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
    (an edit is a flagged breach at verify).
 
 8. **Build↔verify loop — the engine (this orchestrator owns the budget: 3 build attempts).** After each
-   build attempt, run **`/auto-verify-build` as a fresh subagent** (no builder context). It reads the
-   on-disk artifacts itself, but **pass `base` into its spawn explicitly** — a fresh context can't
+   build attempt, run **`/auto-verify-build` as a fresh subagent** (no builder context) **at a strong
+   model — never downsized for a small diff** (it's the safety gate; see the "size each spawn" Guard). It
+   reads the on-disk artifacts itself, but **pass `base` into its spawn explicitly** — a fresh context can't
    recompute the rev (it's also recorded in `ACCEPTANCE_TESTS.md` as a backstop). It falsifies against the
    criteria **using each criterion's layer harness** (Playwright for UI, unit/integration/DB otherwise)
    **+ the full suite** and adversarially reviews the test diff (weakened-old · vacuous-new
@@ -144,8 +146,15 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
    Playwright against a dev server) is fine — proceed. A **secret** about to be committed → stop. Breach →
    abort and report (comment on the ticket if write scope).
 
-9. **code-review → PR (the decision artifact).** Run `/code-review` at effort proportional to the diff;
-   `/auto-commit` any fixes. Then **`/auto-pr`** — it reads `DECISIONS.md` + `VERIFICATION.md` and owns
+9. **code-review → PR (the decision artifact).** Run `/code-review` at **`medium` effort by default** — it
+   sits in the **high-confidence band** (fewer, real findings), so it adds a second pair of eyes past the
+   verify loop *without* the **nitpick flood** `high`/`max` produce (those switch on broader, lower-confidence
+   coverage), and the human's *merge* review still backstops it. Escalate to **`high` only** for a diff with
+   genuinely complex **cross-file / multi-step logic** — that deeper pass catches the one class of bug the
+   verifier and a human skim both miss (the multi-file flow no one can trace in their head), so it earns its
+   extra cost and noise *there*, not on routine diffs. **Never `max`/`ultra` in the unattended flow** —
+   mostly more nitpicks for a full multi-agent cloud fan-out (a real rate-limit cost on top of the flow's own
+   spawns: up to 3 verify passes + the audit). `/auto-commit` any fixes. Then **`/auto-pr`** — it reads `DECISIONS.md` + `VERIFICATION.md` and owns
    the gate body: it **leads** with the ⚠️ ranked decisions-to-confirm, the verification verdict (LLM
    judgment, not ground truth), the test-integrity report, and the assumption count, and ends with a
    "reject with one reason" prompt. **`/auto-pr` is the single owner of ready-vs-draft** — it opens
@@ -168,6 +177,17 @@ PR is cheap (close it, the build was a probe); a human *fooled into merging* a w
   tests. Rely on separation of powers (builder ≠ verifier ≠ acceptance-test author), mechanical tamper
   tripwires in **both** directions, and loud surfacing — not on good intent. (See `SPEC.md`; mutation
   testing is the deferred strong defense.)
+- **Size each spawn to the change — by risk, not line count.** Give every fresh subagent a model tier
+  (the `model` arg on the Agent/Task tool) proportional to the change's **complexity and stakes**, not its
+  diff size — a small, low-risk diff → a lighter model (`sonnet`/`haiku`) for `/auto-audit-tests`; a large
+  or subtle one → `opus`. There is **no per-spawn effort knob** for these (the Agent tool takes only
+  `model`); the effort knob exists **only** for `/code-review`, whose effort level **fans out parallel
+  subagents** and is the biggest rate-limit cost in the flow — so it **defaults to `medium`** (the
+  high-confidence band, no nitpick flood) and steps up to `high` only for complex multi-file logic (step 9). **The one spawn that never scales down is
+  `/auto-verify-build`: floor it at a strong model regardless of diff size.** It is the safety gate — a
+  weaker verifier doesn't fail more *honestly*, it misses tamper breaches and edge cases, i.e. emits false
+  `verified`s, the one thing this flow can't allow. And judge stakes, not size: a *tiny* diff touching
+  auth / payments / a migration is high-stakes — downsize nothing.
 - **Thin circuit-breakers, no competence prediction.** Refuse only on a confabulation, a not-ready tree,
   an inherently-irreversible-action ticket, or a runaway — by **reporting it** (commenting on the ticket
   when write scope allows) and opening no PR, never by half-building. **No-fly is an action guard

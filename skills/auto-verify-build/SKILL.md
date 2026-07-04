@@ -73,6 +73,9 @@ accumulates the builder's state is just the self-grading this skill exists to re
 ## Guards
 - **Fresh subagent, no builder context, one pass.** (Restated because it is the entire point — if this
   ever becomes a persistent in-loop call, the independence is gone.)
+- **Run at a strong model — this is the safety gate; never downsized for a small diff.** The spawner may
+  size other subagents to the change, but not this one: a weaker verifier doesn't fail more *honestly*, it
+  misses tamper breaches and edge cases — i.e. false `verified`s, the one failure this flow can't allow.
 - **Honest over confident.** Cannot verify → `couldn't-verify` → draft. Never dress an unverified
   change up as `verified`.
 - **Falsify, don't confirm.** A verifier that only checks the happy path is theatre.

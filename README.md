@@ -53,7 +53,7 @@ the daily driver.
   │   test diff (weakened-old · vacuous-new · edited-acceptance) → VERIFICATION.md │
   │     verified → done · falsified → fix task (retry) · couldn't-verify/exhausted → DRAFT │
   └──────────────────────────────────────────────────────────────────────────────┘
-  → /code-review (effort ∝ diff)
+  → /code-review (medium by default; ↑ to high only for complex multi-file logic)
   → /auto-pr  — reads DECISIONS.md + VERIFICATION.md; leads with ⚠️ decisions + verdict;
                 opens READY only if verified, else DRAFT
   → STOP. Never merges. Merge = the (async) human gate.

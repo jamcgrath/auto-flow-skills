@@ -65,7 +65,7 @@ the daily driver.
 |---|---|
 | `auto-dev-flow` | The unattended orchestrator — ticket → PR with no human in the loop; owns the build↔verify loop + budget |
 | `auto-verify-ticket` | reconcile an externally-authored ticket against the code (confabulation → comment on ticket, no PR) |
-| `auto-plan-brief` | feature recon — grounded context for `/plan` mode + a **test-tooling inventory** (frameworks/commands per layer); never pauses |
+| `auto-plan-brief` | feature recon — grounded context for `/plan` mode + a **test-tooling inventory** (frameworks/commands per layer); **recon fan-out scales to the surface** (one explorer for a bounded area, 2–3 parallel facets for a broad/unfamiliar one); never pauses |
 | `auto-author-acceptance-tests` | **(new)** author acceptance tests from the criteria, independent of the build, and **commit them** as the base |
 | `auto-audit-tests` | **(new)** audit those tests via red-before-green — adequate / weak / inadequate, so a vacuous test can't pass as "verified" |
 | `auto-implement-brief` | build the plan the lean way — reuse survey → minimal build; decide-and-flag, never edits the acceptance tests |
@@ -128,6 +128,11 @@ done
 - **It is fully non-interactive — even locally.** No questions, no pauses, in Phase 1 *or* Phase 2.
   Local invocation changes only the trigger, never the behaviour — otherwise you're tuning a different
   skill than the one that ships.
+- **A ticket is the usual input, but not required.** Args can be a Jira key, a GitHub issue, or plain
+  pasted text describing the task. With no external ticket, `auto-verify-ticket` is skipped and no
+  `TICKET_CONTEXT.md` is written — so the acceptance-test, audit, and verify skills take their criteria
+  from the approved plan (`PLAN.md`) or the task description instead, keeping an ad-hoc run fully
+  grounded rather than leaving them with no criteria source.
 - **It refuses sparingly** — by *reporting* it (commenting on the ticket when Jira write scope exists,
   else surfacing) and opening **no** PR — on: a **confabulation**, a **not-ready working tree** (dirty /
   unrelated branch), a ticket that **inherently needs an irreversible action** (a prod deploy/migration),

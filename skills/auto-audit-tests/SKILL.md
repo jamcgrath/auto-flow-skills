@@ -17,7 +17,8 @@ and it **does not fix** them (detect-and-flag only).
 
 ## Steps
 
-1. **Gather.** Acceptance criteria (`.dev-flow/<task>/TICKET_CONTEXT.md`); the acceptance-test paths +
+1. **Gather.** Acceptance criteria (`.dev-flow/<task>/TICKET_CONTEXT.md` if it exists, else the
+   approved `.dev-flow/<task>/PLAN.md` / task description); the acceptance-test paths +
    the `base` commit (`.dev-flow/<task>/ACCEPTANCE_TESTS.md`); and the **test-tooling inventory**
    (`.dev-flow/<task>/PLAN_BRIEF.md`) — you need it to know **how each runner reports an assertion
    failure vs an error**, which the whole audit turns on.

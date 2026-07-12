@@ -21,7 +21,8 @@ accumulates the builder's state is just the self-grading this skill exists to re
    sha **recorded in `.dev-flow/<task>/ACCEPTANCE_TESTS.md`** (and also passed to you by the
    orchestrator) — you run fresh and cannot recompute it, so read it. The authored tests are *in* that
    base, so any builder edit to one surfaces in the diff. Also read the acceptance criteria
-   (`.dev-flow/<task>/TICKET_CONTEXT.md`), the protected acceptance-test paths (same manifest), and the
+   (`.dev-flow/<task>/TICKET_CONTEXT.md` if it exists, else the approved `.dev-flow/<task>/PLAN.md` /
+   task description), the protected acceptance-test paths (same manifest), and the
    **test-adequacy results** (`.dev-flow/<task>/TEST_AUDIT.md`) — a criterion whose test was judged
    `inadequate` is **not** verifiable by that test, no matter what it does now.
 

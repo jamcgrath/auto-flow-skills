@@ -10,6 +10,13 @@ Phase 1 / experimental — not yet versioned or released, so everything sits und
 
 ### Changed
 
+- **Test skills — criteria now fall back past the ticket.** `auto-author-acceptance-tests`,
+  `auto-audit-tests`, and `auto-verify-build` read acceptance criteria from
+  `.dev-flow/<task>/TICKET_CONTEXT.md` **if it exists, otherwise from the approved `PLAN.md` /
+  the task description**. Previously all three hardcoded `TICKET_CONTEXT.md`, so an ad-hoc /
+  typed-task run (where `auto-verify-ticket` is skipped and no `TICKET_CONTEXT.md` is written) left
+  them with no criteria source. Mirrors the same fix already shipped in dev-flow.
+
 - **`auto-dev-flow` — compaction-safe by construction.** The unattended flow is now explicitly
   robust to the harness summarizing (compacting) context during a long run. Every value the flow
   depends on across a phase boundary — `base` rev, the protected acceptance-test set, open decisive

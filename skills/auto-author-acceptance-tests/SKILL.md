@@ -17,7 +17,8 @@ tests** → build → /auto-verify-build`. It writes tests, commits them, and re
 ## Steps
 
 1. **Read the criteria + the repo's test tooling, then classify each by layer.** Acceptance criteria
-   from `.dev-flow/<task>/TICKET_CONTEXT.md`; the intended surface from `.dev-flow/<task>/PLAN.md` (read
+   from `.dev-flow/<task>/TICKET_CONTEXT.md` if it exists, otherwise from the task description / the
+   approved `.dev-flow/<task>/PLAN.md` / `PLAN_BRIEF.md`'s Goal; the intended surface from `.dev-flow/<task>/PLAN.md` (read
    both its **Acceptance-test surface** *and* its build steps — they can diverge, and the build steps name
    surfaces the suggested test list may under-name); the **decide-and-flag decisions** from
    `.dev-flow/<task>/DECISIONS.md` (each resolved fork — a chosen label, a second renderer — is a surface

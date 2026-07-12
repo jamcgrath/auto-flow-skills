@@ -21,7 +21,15 @@ Second step of the feature path **when there's a ticket** (`auto-verify-ticket` 
    work from whatever the user gives (a typed task description, a GitHub issue, an AI brief). If
    even that is thin, proceed on the best ticket-grounded interpretation and record the assumption under Open Questions — never block for input (this runs unattended).
 
-2. **Reconnoitre the codebase** — hand the searching to an `Explore` subagent. **If you have
+2. **Reconnoitre the codebase** — hand the searching to `Explore` subagent(s), **fanned out in
+   proportion to the surface**. A bounded, familiar area needs **one**. A **broad or unfamiliar** one
+   (the same trigger as the signature-map pass below) gets **2–3 in parallel**, each tracing a
+   **distinct facet** so they don't overlap — e.g. the closest similar feature end-to-end · the
+   architecture and control-flow of the target area · the test-and-tooling landscape · the
+   extension/integration points this change plugs into. Then **read the union of the files they
+   surface** before writing the brief — the subagents locate code, they don't vet it, so the judgement
+   of what actually matters happens here on the main thread. Don't fan out on a small change: one pass
+   is leaner and a needless spread just burns tokens. **If you have
    `TICKET_CONTEXT.md`, build on it — don't restate its Codebase Notes; without it, gather the
    conventions here.** Your job is the net-new, change-specific recon:
    - the exact **files (and line anchors)** likely to change to satisfy the intent

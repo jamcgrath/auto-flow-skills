@@ -17,6 +17,12 @@ Phase 1 / experimental — not yet versioned or released, so everything sits und
   typed-task run (where `auto-verify-ticket` is skipped and no `TICKET_CONTEXT.md` is written) left
   them with no criteria source. Mirrors the same fix already shipped in dev-flow.
 
+- **`auto-plan-brief` — recon fan-out scaled to the surface.** Reconnaissance now hands the search to
+  `Explore` subagent(s) **in proportion to the surface**: one for a bounded, familiar area; 2–3 in
+  parallel — each tracing a distinct facet — for a broad or unfamiliar one, then the main thread reads
+  the union and judges relevance. Small changes still get a single pass (a needless spread just burns
+  tokens). Grounds the unattended build better, where there's no human to catch a thin plan.
+
 - **`auto-dev-flow` — compaction-safe by construction.** The unattended flow is now explicitly
   robust to the harness summarizing (compacting) context during a long run. Every value the flow
   depends on across a phase boundary — `base` rev, the protected acceptance-test set, open decisive
